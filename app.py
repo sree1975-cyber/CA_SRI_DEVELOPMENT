@@ -555,10 +555,9 @@ def main():
         render_batch_prediction()
         
         # Individual student prediction section
-        # render_individual_prediction()----COMMINTING THIS DUE TO NO NEED TO USE HERE
+        render_individual_prediction()
         plot_risk_gauge()
-        #get_risk_explanation()
-        #get_recommendation_with_reasons()
+       
             
     elif app_mode == "Advanced Analytics":
         render_advanced_analytics()
