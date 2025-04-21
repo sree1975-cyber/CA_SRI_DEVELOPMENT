@@ -209,91 +209,156 @@ def render_sidebar():
     
     return app_mode
 def render_individual_prediction():
-    """Render prediction UI for CURRENT-YEAR STUDENTS only"""
+    """Render the Individual Student Prediction section for current-year students"""
+    # Individual prediction card
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>👨‍🎓 Current-Year Student Prediction</div>", unsafe_allow_html=True)
-
-    # 1. VALIDATE CURRENT-YEAR DATA EXISTS
-    if 'current_year_data' not in st.session_state:
-        st.error("⚠️ No current-year data loaded. Upload current-year data first.")
+    
+    # Add an expandable guide
+    with st.expander("About Individual Prediction"):
+        st.markdown("""
+        This section predicts chronic absenteeism risk for current-year students.
+        
+        **How to use:**
+        1. Select a current-year student from the dropdown
+        2. Click 'Calculate CA Risk' to generate a prediction
+        3. View the risk level and recommendations
+        """)
+    
+    # Check if current-year data exists
+    if 'current_year_data' not in st.session_state or st.session_state.current_year_data.empty:
+        st.error("No current-year student data loaded. Please upload current-year data first.")
         return
-
-    if st.session_state.current_year_data.empty:
-        st.error("⚠️ Current-year data is empty. Check your upload.")
-        return
-
-    # 2. ENSURE STUDENT_ID COLUMN EXISTS
+    
+    # Check if Student_ID column exists
     if 'Student_ID' not in st.session_state.current_year_data.columns:
-        st.error("❌ Current-year data must contain 'Student_ID' column.")
+        st.error("Current-year data must contain 'Student_ID' column.")
         return
-
-    # 3. GET CURRENT-YEAR STUDENT IDs
-    current_students = (
-        st.session_state.current_year_data['Student_ID']
-        .dropna()
-        .unique()
-        .tolist()
-    )
-
+    
+    # Get current-year student IDs
+    current_students = st.session_state.current_year_data['Student_ID'].dropna().unique().tolist()
+    
     if not current_students:
-        st.error("🔍 No student IDs found in current-year data.")
+        st.error("No valid student IDs found in current-year data.")
         return
-
-    # 4. MAIN UI
+    
+    # Create a two-column layout
     col1, col2 = st.columns([2, 1])
-
-    with col1:
+    
+    with col1:  # Input column
         st.markdown("<div class='card-subtitle'>📝 Student Details</div>", unsafe_allow_html=True)
         
-        # STUDENT SELECTION (CURRENT-YEAR ONLY)
-        selected_id = st.selectbox(
-            "Select Student",
+        # Student selection (current-year only)
+        student_select = st.selectbox(
+            "Select Current-Year Student",
             options=current_students,
             index=0,
             key="current_student_select"
         )
-
-        # GET STUDENT RECORD
-        student_data = st.session_state.current_year_data[
-            st.session_state.current_year_data['Student_ID'] == selected_id
-        ].iloc[0]
-
-        # INPUT FORM
-        with st.form(key="current_year_form"):
-            # School/grade/etc. inputs (adjust columns as needed)
-            school = st.text_input(
-                "School",
-                value=str(student_data.get('School', '')),
-                key="school_input"
-            )
-
-            present_days = st.number_input(
-                "Present Days (Current Year)",
-                min_value=0,
-                max_value=200,
-                value=int(student_data.get('Present_Days', 0)),
-                key="present_days_input"
-            )
-
-            # ... add other fields as needed ...
-
-            if st.form_submit_button("Calculate Risk"):
-                # Your prediction function here
-                calculate_current_year_risk()  # Should save to st.session_state.current_prediction
-
-    with col2:
-        st.markdown("<div class='card-subtitle'>🔍 Risk Analysis</div>", unsafe_allow_html=True)
         
-        if 'current_prediction' in st.session_state:
-            # Display results
-            st.plotly_chart(
-                plot_risk_gauge(st.session_state.current_prediction),
-                use_container_width=True
-            )
-            # Show recommendations...
+        # Get student data
+        student_data = st.session_state.current_year_data[
+            st.session_state.current_year_data['Student_ID'] == student_select
+        ].iloc[0]
+        
+        # Create a form for inputs
+        with st.form(key="ca_input_form", clear_on_submit=False):
+            details_col1, details_col2 = st.columns(2)
+            
+            with details_col1:
+                # School input
+                school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
+                school = st.selectbox(
+                    "School",
+                    options=school_options,
+                    index=school_options.index(student_data.get('School', 'North High')),
+                    key="school_input"
+                )
+                
+                # Grade input
+                grade = st.number_input(
+                    "Grade",
+                    min_value=1,
+                    max_value=12,
+                    value=int(student_data.get('Grade', 9)),
+                    key="grade_input"
+                )
+                
+                # Gender input
+                gender = st.selectbox(
+                    "Gender",
+                    options=["Male", "Female"],
+                    index=0 if student_data.get('Gender', 'Male') == "Male" else 1,
+                    key="gender_input"
+                )
+                
+                # Meal code
+                meal_code = st.selectbox(
+                    "Meal Code",
+                    options=["Free", "Reduced", "Paid"],
+                    index=0 if student_data.get('Meal_Code', 'Free') == "Free" else 1,
+                    key="meal_code_input"
+                )
+            
+            with details_col2:
+                # Attendance details
+                present_days = st.number_input(
+                    "Present Days",
+                    min_value=0,
+                    max_value=200,
+                    value=int(student_data.get('Present_Days', 150)),
+                    key="present_days_input"
+                )
+                
+                absent_days = st.number_input(
+                    "Absent Days",
+                    min_value=0,
+                    max_value=200,
+                    value=int(student_data.get('Absent_Days', 10)),
+                    key="absent_days_input"
+                )
+                
+                # Calculate attendance percentage
+                total_days = present_days + absent_days
+                attendance_pct = (present_days / total_days * 100) if total_days > 0 else 0
+                st.metric("Attendance Percentage", f"{attendance_pct:.1f}%")
+                
+                # Academic performance
+                academic_perf = st.slider(
+                    "Academic Performance",
+                    min_value=0,
+                    max_value=100,
+                    value=int(student_data.get('Academic_Perf', 70)),
+                    key="academic_perf_input"
+                )
+            
+            # Submit button (using your existing function)
+            submit_button = st.form_submit_button(label="Calculate CA Risk", on_click=on_calculate_risk)
+    
+    with col2:  # Results column
+        st.markdown("<div class='card-subtitle'>🔍 Risk Assessment</div>", unsafe_allow_html=True)
+        
+        # Display prediction results
+        if st.session_state.current_prediction is not None:
+            risk_value = st.session_state.current_prediction
+            
+            # Display the risk gauge
+            risk_fig = plot_risk_gauge(risk_value)
+            
+            if risk_fig:
+                st.plotly_chart(risk_fig, use_container_width=True, key="risk_gauge_chart")
+            
+            # Display recommendation
+            st.markdown("### Recommended Actions")
+            recommendations = get_recommendation(risk_value)
+            
+            st.markdown(f"<div class='recommendation'>", unsafe_allow_html=True)
+            for rec in recommendations:
+                st.markdown(f"- {rec}")
+            st.markdown("</div>", unsafe_allow_html=True)
         else:
-            st.info("Select a student and calculate risk.")
-
+            st.info("Select a student and click 'Calculate CA Risk' to see prediction.")
+    
     st.markdown("</div>", unsafe_allow_html=True)
     
 # Main application
