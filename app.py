@@ -305,6 +305,10 @@ def render_individual_prediction():
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>👨‍🎓 Student Risk Analysis</div>", unsafe_allow_html=True)
     
+    # Initialize session state variables if they don't exist
+    if 'current_prediction' not in st.session_state:
+        st.session_state.current_prediction = None
+    
     # Data Validation
     if 'current_year_data' not in st.session_state:
         st.error("No student data loaded. Please upload current-year data first.")
@@ -316,15 +320,22 @@ def render_individual_prediction():
         st.error("No valid student IDs found.")
         return
     
+    # Initialize student selection if not exists
+    if 'current_student_select' not in st.session_state:
+        st.session_state.current_student_select = current_students[0]
+    
     # Student Selection
     selected_id = st.selectbox(
         "Select Student",
         options=current_students,
-        index=0,
-        key="student_select"
+        index=current_students.index(st.session_state.current_student_select),
+        key="student_select_widget"
     )
     
-    # Get CURRENT student data (auto-updates on selection change)
+    # Update session state when selection changes
+    st.session_state.current_student_select = selected_id
+    
+    # Get CURRENT student data
     current_student = st.session_state.current_year_data[
         st.session_state.current_year_data['Student_ID'] == selected_id
     ].iloc[0].to_dict()
@@ -335,11 +346,18 @@ def render_individual_prediction():
         
         with col1:
             # School (with safe default)
+            school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
+            school_value = current_student.get('School', 'North High')
+            try:
+                school_index = school_options.index(school_value)
+            except ValueError:
+                school_index = 0
+            
             school = st.selectbox(
                 "School",
-                options=["North High", "South High", "East Middle", "West Elementary", "Central Academy"],
-                index=0,
-                key=f"school_{selected_id}"  # Unique key per student
+                options=school_options,
+                index=school_index,
+                key=f"school_{selected_id}"
             )
             
             # Grade
@@ -376,7 +394,7 @@ def render_individual_prediction():
             )
         
         with col2:
-            # Academic Performance (NOW AUTO-UPDATING)
+            # Academic Performance
             academic_perf = st.slider(
                 "Academic Performance %",
                 min_value=0,
@@ -386,23 +404,41 @@ def render_individual_prediction():
             )
             
             # Demographic factors
+            gender_options = ["Male", "Female", "Other"]
+            gender_value = current_student.get('Gender', 'Male')
+            gender_index = gender_options.index(gender_value) if gender_value in gender_options else 0
+            
             gender = st.selectbox(
                 "Gender",
-                options=["Male", "Female", "Other"],
-                index=["Male", "Female", "Other"].index(current_student.get('Gender', 'Male')),
+                options=gender_options,
+                index=gender_index,
                 key=f"gender_{selected_id}"
             )
             
+            meal_options = ["Free", "Reduced", "Paid"]
+            meal_value = current_student.get('Meal_Code', 'Free')
+            meal_index = meal_options.index(meal_value) if meal_value in meal_options else 0
+            
             meal_code = st.selectbox(
                 "Meal Status",
-                options=["Free", "Reduced", "Paid"],
-                index=["Free", "Reduced", "Paid"].index(current_student.get('Meal_Code', 'Free')),
+                options=meal_options,
+                index=meal_index,
                 key=f"meal_{selected_id}"
             )
         
         # Submit button
         if st.form_submit_button("Analyze Risk"):
-            on_calculate_risk()  # Your existing prediction function
+            # Store current inputs in session state
+            st.session_state.school_input = school
+            st.session_state.grade_input = grade
+            st.session_state.present_days_input = present_days
+            st.session_state.absent_days_input = absent_days
+            st.session_state.academic_perf_input = academic_perf
+            st.session_state.gender_input = gender
+            st.session_state.meal_code_input = meal_code
+            
+            # Call prediction function
+            on_calculate_risk()
     
     # Results Display
     if st.session_state.get('current_prediction'):
