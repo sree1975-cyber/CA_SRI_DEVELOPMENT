@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 import os
 from datetime import datetime
+import plotly.graph_objects as go
+
 
 # Import utility modules
 from utils.common import (
