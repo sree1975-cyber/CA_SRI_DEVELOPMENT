@@ -212,6 +212,7 @@ def render_sidebar():
     return app_mode
 
 # Individual Student Prediction
+
 def plot_risk_gauge(risk_value):
     """Create a risk gauge visualization"""
     fig = go.Figure(go.Indicator(
@@ -495,6 +496,7 @@ def render_individual_prediction():
             """, unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
+
 # Main application
 def main():
     """Main application entry point"""
