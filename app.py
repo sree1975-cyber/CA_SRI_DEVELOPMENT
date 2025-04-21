@@ -230,9 +230,9 @@ def get_risk_explanation(risk_value, student_data):
         explanations.append(f"• Low attendance rate ({attendance_pct:.1f}%)")
     
     # Academic factors
-    academic_perf = student_data.get('Academic_Perf', 100)
-    if academic_perf < 65:
-        explanations.append(f"• Below-average academics ({academic_perf}%)")
+    Academic_Performance = student_data.get('Academic_Performance', 100)
+    if Academic_Performance < 65:
+        explanations.append(f"• Below-average academics ({Academic_Performance}%)")
     
     # Socioeconomic factors
     if student_data.get('Meal_Code', '') in ['Free', 'Reduced']:
@@ -262,10 +262,10 @@ def get_recommendation_with_reasons(risk_value, student_data):
                 f"High absence days ({student_data.get('Absent_Days')} days) may indicate health concerns"
             ))
             
-        if student_data.get('Academic_Perf', 70) < 60:
+        if student_data.get('Academic_Performance', 70) < 60:
             interventions.append((
                 "📚 Assign academic support tutor",
-                f"Low academic performance ({student_data.get('Academic_Perf')}%) is correlated with dropout risk"
+                f"Low academic performance ({student_data.get('Academic_Performance')}%) is correlated with dropout risk"
             ))
 
     # Medium Risk (30-69%)
@@ -312,7 +312,7 @@ def render_individual_prediction():
     
     # Verify required columns exist
     required_columns = ['Student_ID', 'School', 'Grade', 'Present_Days', 
-                       'Absent_Days', 'Academic_Perf', 'Gender', 'Meal_Code']
+                       'Absent_Days', 'Academic_Performance', 'Gender', 'Meal_Code']
     
     missing_columns = [col for col in required_columns 
                       if col not in st.session_state.current_year_data.columns]
@@ -354,7 +354,7 @@ def render_individual_prediction():
         'Grade': int(student_data.get('Grade', 9)),
         'Present_Days': int(student_data.get('Present_Days', 150)),
         'Absent_Days': int(student_data.get('Absent_Days', 10)),
-        'Academic_Perf': int(student_data.get('Academic_Performance', 70)),
+        'Academic_Performance': int(student_data.get('Academic_Performance', 70)),
         'Gender': str(student_data.get('Gender', 'Male')),
         'Meal_Code': str(student_data.get('Meal_Code', 'Free'))
     }
@@ -409,11 +409,11 @@ def render_individual_prediction():
         
         with col2:
             # Academic Performance
-            academic_perf = st.slider(
+            Academic_Performance = st.slider(
                 "Academic Performance %",
                 min_value=0,
                 max_value=100,
-                value=current_student['Academic_Perf'],
+                value=current_student['Academic_Performance'],
                 key=f"academic_{selected_id}"
             )
             
