@@ -556,9 +556,9 @@ def main():
         
         # Individual student prediction section
         # render_individual_prediction()----COMMINTING THIS DUE TO NO NEED TO USE HERE
-        plot_risk_gauge()
-        get_risk_explanation()
-        get_recommendation_with_reasons()
+       # plot_risk_gauge()
+      #  get_risk_explanation()
+       # get_recommendation_with_reasons()
             
     elif app_mode == "Advanced Analytics":
         render_advanced_analytics()
