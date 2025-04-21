@@ -390,8 +390,4 @@ def display_svg(file_path, width=None):
         content = content.replace("<svg ", f"<svg width='{width}' ")
         
     return content
-    plot_risk_gauge()
-
-    get_risk_explanation()
-
-    get_recommendation_with_reasons()
+ 
