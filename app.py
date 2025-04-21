@@ -220,7 +220,7 @@ def plot_risk_gauge(risk_value):
         domain={'x': [0, 1], 'y': [0, 1]},
         title={'text': "Absenteeism Risk Score"},
         gauge={
-            'axis': {'range': [0, 100]},
+            'axis': {'range': [None, 100]},
             'steps': [
                 {'range': [0, 30], 'color': "lightgreen"},
                 {'range': [30, 70], 'color': "yellow"},
@@ -245,7 +245,6 @@ def get_risk_explanation(risk_value, student_data):
     else:
         explanations.append("✅ **Low Risk Level** (Good attendance patterns)")
     
-    # Attendance factors
     present_days = student_data.get('Present_Days', 0)
     absent_days = student_data.get('Absent_Days', 1)
     attendance_pct = (present_days / (present_days + absent_days)) * 100
@@ -253,12 +252,10 @@ def get_risk_explanation(risk_value, student_data):
     if attendance_pct < 85:
         explanations.append(f"• Low attendance rate ({attendance_pct:.1f}%)")
     
-    # Academic factors
     academic_performance = student_data.get('Academic_Performance', 100)
     if academic_performance < 65:
         explanations.append(f"• Below-average academics ({academic_performance}%)")
     
-    # Socioeconomic factors
     if student_data.get('Meal_Code', '') in ['Free', 'Reduced']:
         explanations.append("• Eligible for meal assistance (potential socioeconomic factors)")
     
@@ -268,71 +265,66 @@ def get_recommendation_with_reasons(risk_value, student_data):
     """Generate interventions with explanations based on risk factors"""
     interventions = []
     
-    # High Risk (>= 70%)
     if risk_value >= 0.7:
         interventions.append((
             "🚨 Immediate 1-on-1 meeting with school counselor",
-            "Student is at very high risk of chronic absenteeism based on current patterns"
+            "Student is at very high risk of chronic absenteeism"
         ))
         interventions.append((
             "📞 Parent/guardian conference within 48 hours",
-            "Early family engagement is critical for high-risk cases"
+            "Early family engagement is critical"
         ))
         
         if student_data.get('Absent_Days', 0) > 15:
             interventions.append((
                 "🩺 Schedule health checkup",
-                f"High absence days ({student_data.get('Absent_Days')} days) may indicate health concerns"
+                f"High absence days ({student_data.get('Absent_Days')})"
             ))
             
         if student_data.get('Academic_Performance', 70) < 60:
             interventions.append((
                 "📚 Assign academic support tutor",
-                f"Low academic performance ({student_data.get('Academic_Performance')}%) is correlated with dropout risk"
+                f"Low performance ({student_data.get('Academic_Performance')}%)"
             ))
 
-    # Medium Risk (30-69%)
     elif risk_value >= 0.3:
         interventions.append((
             "📅 Weekly check-ins with homeroom teacher",
-            "Regular monitoring can prevent escalation to high risk"
+            "Regular monitoring prevents escalation"
         ))
         interventions.append((
-            "✉️ Send personalized attendance report to family",
-            "Family awareness improves intervention effectiveness"
+            "✉️ Send personalized attendance report",
+            "Family awareness improves outcomes"
         ))
         
         if student_data.get('Meal_Code', '') in ['Free', 'Reduced']:
             interventions.append((
-                "🍎 Connect with nutrition support programs",
-                "Food insecurity may be contributing factor"
+                "🍎 Connect with nutrition programs",
+                "Address potential food insecurity"
             ))
 
-    # Low Risk (<30%)
     else:
         interventions.append((
-            "👍 Positive reinforcement for good attendance",
-            "Maintaining good patterns prevents future risk"
+            "👍 Positive reinforcement",
+            "Maintaining good patterns prevents issues"
         ))
         
         if student_data.get('Present_Days', 0) < 160:
             interventions.append((
                 "🎯 Set attendance improvement goal",
-                f"Current {student_data.get('Present_Days', 0)} present days has room for improvement"
+                f"Current attendance: {student_data.get('Present_Days')} days"
             ))
 
     return interventions
 
 def on_calculate_risk():
-    """Calculate and store the risk prediction in session state"""
+    """Calculate risk score based on form inputs"""
     try:
-        # Get current student ID
         selected_id = st.session_state.get("student_select")
         if not selected_id:
             st.error("No student selected")
             return
         
-        # Get all current form values
         inputs = {
             'Present_Days': st.session_state.get(f"present_{selected_id}", 150),
             'Absent_Days': st.session_state.get(f"absent_{selected_id}", 10),
@@ -341,60 +333,48 @@ def on_calculate_risk():
             'Meal_Code': st.session_state.get(f"meal_{selected_id}", 'Free')
         }
         
-        # Calculate attendance rate
         attendance_rate = inputs['Present_Days'] / (inputs['Present_Days'] + inputs['Absent_Days'])
-        
-        # Calculate academic factor (inverse of performance)
         academic_factor = 1 - (inputs['Academic_Performance'] / 100)
-        
-        # Simple risk calculation (replace with your actual model)
         risk_score = (0.6 * (1 - attendance_rate)) + (0.4 * academic_factor)
         
-        # Store the prediction
         st.session_state.current_prediction = risk_score
         st.session_state.current_student_data = inputs
         
     except Exception as e:
-        st.error(f"Error calculating risk: {str(e)}")
+        st.error(f"Calculation error: {str(e)}")
         st.session_state.current_prediction = None
 
 def render_individual_prediction():
-    """Render the prediction interface with auto-updating fields"""
-    # Initialize session state
+    """Main prediction interface"""
     if 'current_prediction' not in st.session_state:
         st.session_state.current_prediction = None
     
-    # UI Setup
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>👨‍🎓 Student Risk Analysis</div>", unsafe_allow_html=True)
     
-    # Data Validation
     if 'current_year_data' not in st.session_state:
-        st.error("No student data loaded. Please upload current-year data first.")
+        st.error("Please upload current-year data first")
         return
     
-    # Verify required columns exist
     required_columns = ['Student_ID', 'School', 'Grade', 'Present_Days', 
                        'Absent_Days', 'Academic_Performance', 'Gender', 'Meal_Code']
     
-    missing_columns = [col for col in required_columns 
-                      if col not in st.session_state.current_year_data.columns]
+    missing_cols = [col for col in required_columns 
+                   if col not in st.session_state.current_year_data.columns]
     
-    if missing_columns:
-        st.error(f"Uploaded data is missing required columns: {', '.join(missing_columns)}")
+    if missing_cols:
+        st.error(f"Missing columns: {', '.join(missing_cols)}")
         return
     
-    # Get current students
     try:
         current_students = st.session_state.current_year_data['Student_ID'].dropna().unique().tolist()
         if not current_students:
-            st.error("No valid student IDs found in the data.")
+            st.error("No valid student IDs found")
             return
     except Exception as e:
-        st.error(f"Error processing student data: {str(e)}")
+        st.error(f"Data error: {str(e)}")
         return
     
-    # Student Selection
     selected_id = st.selectbox(
         "Select Student",
         options=current_students,
@@ -402,16 +382,14 @@ def render_individual_prediction():
         key="student_select"
     )
     
-    # Get CURRENT student data with error handling
     try:
         student_data = st.session_state.current_year_data[
             st.session_state.current_year_data['Student_ID'] == selected_id
         ].iloc[0]
     except IndexError:
-        st.error("Selected student not found in data.")
+        st.error("Student not found")
         return
     
-    # Create a dictionary with safe defaults
     current_student = {
         'School': str(student_data.get('School', 'North High')),
         'Grade': int(student_data.get('Grade', 9)),
@@ -422,24 +400,21 @@ def render_individual_prediction():
         'Meal_Code': str(student_data.get('Meal_Code', 'Free'))
     }
     
-    # Auto-updating Form
     with st.form(key="student_form"):
         col1, col2 = st.columns(2)
         
         with col1:
-            # School input with safe options
             school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
             school_value = current_student['School']
             school_index = school_options.index(school_value) if school_value in school_options else 0
-            school = st.selectbox(
+            st.selectbox(
                 "School",
                 options=school_options,
                 index=school_index,
                 key=f"school_{selected_id}"
             )
             
-            # Grade input
-            grade = st.number_input(
+            st.number_input(
                 "Grade",
                 min_value=1,
                 max_value=12,
@@ -447,7 +422,6 @@ def render_individual_prediction():
                 key=f"grade_{selected_id}"
             )
             
-            # Attendance
             present_days = st.number_input(
                 "Present Days",
                 min_value=0,
@@ -464,7 +438,6 @@ def render_individual_prediction():
                 key=f"absent_{selected_id}"
             )
             
-            # Auto-calculated attendance
             total_days = present_days + absent_days
             st.metric(
                 "Attendance Rate", 
@@ -472,8 +445,7 @@ def render_individual_prediction():
             )
         
         with col2:
-            # Academic Performance
-            academic_performance = st.slider(
+            st.slider(
                 "Academic Performance %",
                 min_value=0,
                 max_value=100,
@@ -481,11 +453,10 @@ def render_individual_prediction():
                 key=f"academic_{selected_id}"
             )
             
-            # Demographic factors
             gender_options = ["Male", "Female", "Other"]
             gender_value = current_student['Gender']
             gender_index = gender_options.index(gender_value) if gender_value in gender_options else 0
-            gender = st.selectbox(
+            st.selectbox(
                 "Gender",
                 options=gender_options,
                 index=gender_index,
@@ -495,31 +466,25 @@ def render_individual_prediction():
             meal_options = ["Free", "Reduced", "Paid"]
             meal_value = current_student['Meal_Code']
             meal_index = meal_options.index(meal_value) if meal_value in meal_options else 0
-            meal_code = st.selectbox(
+            st.selectbox(
                 "Meal Status",
                 options=meal_options,
                 index=meal_index,
                 key=f"meal_{selected_id}"
             )
         
-        # Submit button - triggers calculation and refresh
         if st.form_submit_button("Analyze Risk"):
             on_calculate_risk()
-            st.rerun()  # Force refresh to show results
+            st.rerun()
     
-    # Results Display
     if st.session_state.get('current_prediction') is not None:
         risk_value = st.session_state.current_prediction
-        
-        # Risk Gauge
         st.plotly_chart(plot_risk_gauge(risk_value), use_container_width=True)
         
-        # Risk Explanation
         st.markdown("### Risk Analysis")
         student_data = st.session_state.get('current_student_data', current_student)
         st.markdown(get_risk_explanation(risk_value, student_data))
         
-        # Interventions
         st.markdown("### Recommended Actions")
         for intervention, reason in get_recommendation_with_reasons(risk_value, student_data):
             st.markdown(f"""
@@ -530,7 +495,6 @@ def render_individual_prediction():
             """, unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
-    
 # Main application
 def main():
     """Main application entry point"""
