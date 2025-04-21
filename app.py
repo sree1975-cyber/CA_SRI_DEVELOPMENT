@@ -214,14 +214,15 @@ def render_sidebar():
 # Individual Student Prediction
 
 def plot_risk_gauge(risk_value):
-    """Create a risk gauge visualization"""
+    """Create a properly sized risk gauge visualization"""
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=risk_value*100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Absenteeism Risk Score"},
+        title={'text': "Absenteeism Risk Score", 'font': {'size': 16}},
         gauge={
-            'axis': {'range': [None, 100]},
+            'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+            'bar': {'color': "darkblue"},
             'steps': [
                 {'range': [0, 30], 'color': "lightgreen"},
                 {'range': [30, 70], 'color': "yellow"},
@@ -232,7 +233,14 @@ def plot_risk_gauge(risk_value):
                 'value': risk_value*100}
         }
     ))
-    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+    
+    # Set proper figure size and margins
+    fig.update_layout(
+        height=300,  # Reduced height
+        width=400,   # Reduced width
+        margin=dict(t=50, b=10, l=50, r=50),
+        font={'size': 12}
+    )
     return fig
 
 def get_risk_explanation(risk_value, student_data):
