@@ -221,15 +221,18 @@ def get_risk_explanation(risk_value, student_data):
     else:
         explanations.append("✅ **Low Risk Level** (Good attendance patterns)")
     
-    # Attendance factors
-    attendance_pct = (student_data.get('Present_Days', 0) / 
-                    (student_data.get('Present_Days', 0) + student_data.get('Absent_Days', 1)) * 100
+    # Attendance factors - FIXED PARENTHESIS ISSUE
+    present_days = student_data.get('Present_Days', 0)
+    absent_days = student_data.get('Absent_Days', 1)
+    attendance_pct = (present_days / (present_days + absent_days)) * 100
+    
     if attendance_pct < 85:
         explanations.append(f"• Low attendance rate ({attendance_pct:.1f}%)")
     
     # Academic factors
-    if student_data.get('Academic_Perf', 100) < 65:
-        explanations.append(f"• Below-average academics ({student_data.get('Academic_Perf')}%)")
+    academic_perf = student_data.get('Academic_Perf', 100)
+    if academic_perf < 65:
+        explanations.append(f"• Below-average academics ({academic_perf}%)")
     
     # Socioeconomic factors
     if student_data.get('Meal_Code', '') in ['Free', 'Reduced']:
@@ -237,6 +240,65 @@ def get_risk_explanation(risk_value, student_data):
     
     return "\n".join(explanations)
 
+
+def get_recommendation_with_reasons(risk_value, student_data):
+    """Generate interventions with explanations based on risk factors"""
+    interventions = []
+    
+    # High Risk (>= 70%)
+    if risk_value >= 0.7:
+        interventions.append((
+            "🚨 Immediate 1-on-1 meeting with school counselor",
+            "Student is at very high risk of chronic absenteeism based on current patterns"
+        ))
+        interventions.append((
+            "📞 Parent/guardian conference within 48 hours",
+            "Early family engagement is critical for high-risk cases"
+        ))
+        
+        if student_data.get('Absent_Days', 0) > 15:
+            interventions.append((
+                "🩺 Schedule health checkup",
+                f"High absence days ({student_data.get('Absent_Days')} days) may indicate health concerns"
+            ))
+            
+        if student_data.get('Academic_Perf', 70) < 60:
+            interventions.append((
+                "📚 Assign academic support tutor",
+                f"Low academic performance ({student_data.get('Academic_Perf')}%) is correlated with dropout risk"
+            ))
+
+    # Medium Risk (30-69%)
+    elif risk_value >= 0.3:
+        interventions.append((
+            "📅 Weekly check-ins with homeroom teacher",
+            "Regular monitoring can prevent escalation to high risk"
+        ))
+        interventions.append((
+            "✉️ Send personalized attendance report to family",
+            "Family awareness improves intervention effectiveness"
+        ))
+        
+        if student_data.get('Meal_Code', '') in ['Free', 'Reduced']:
+            interventions.append((
+                "🍎 Connect with nutrition support programs",
+                "Food insecurity may be contributing factor"
+            ))
+
+    # Low Risk (<30%)
+    else:
+        interventions.append((
+            "👍 Positive reinforcement for good attendance",
+            "Maintaining good patterns prevents future risk"
+        ))
+        
+        if student_data.get('Present_Days', 0) < 160:
+            interventions.append((
+                "🎯 Set attendance improvement goal",
+                f"Current {student_data.get('Present_Days', 0)} present days has room for improvement"
+            ))
+
+    return interventions
 def render_individual_prediction():
     """Render the prediction interface with auto-updating fields"""
     # UI Setup
@@ -364,6 +426,7 @@ def render_individual_prediction():
             """, unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
+    
 # Main application
 def main():
     """Main application entry point"""
