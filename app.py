@@ -262,16 +262,22 @@ def render_individual_prediction():
         ].iloc[0]
         
         # Create a form for inputs
-        with st.form(key="ca_input_form", clear_on_submit=False):
+        with st.form(key="ca_input_form"):
             details_col1, details_col2 = st.columns(2)
             
             with details_col1:
-                # School input
+                # School input with safe index handling
                 school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
+                school_value = student_data.get('School', 'North High')
+                try:
+                    school_index = school_options.index(school_value)
+                except ValueError:
+                    school_index = 0  # Default to first option if school not found
+                
                 school = st.selectbox(
                     "School",
                     options=school_options,
-                    index=school_options.index(student_data.get('School', 'North High')),
+                    index=school_index,
                     key="school_input"
                 )
                 
@@ -332,14 +338,15 @@ def render_individual_prediction():
                     key="academic_perf_input"
                 )
             
-            # Submit button (using your existing function)
-            submit_button = st.form_submit_button(label="Calculate CA Risk", on_click=on_calculate_risk)
+            # Properly defined submit button inside the form
+            if st.form_submit_button(label="Calculate CA Risk"):
+                on_calculate_risk()  # Call your existing prediction function
     
     with col2:  # Results column
         st.markdown("<div class='card-subtitle'>🔍 Risk Assessment</div>", unsafe_allow_html=True)
         
         # Display prediction results
-        if st.session_state.current_prediction is not None:
+        if st.session_state.get('current_prediction') is not None:
             risk_value = st.session_state.current_prediction
             
             # Display the risk gauge
