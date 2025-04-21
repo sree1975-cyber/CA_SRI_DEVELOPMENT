@@ -354,7 +354,7 @@ def render_individual_prediction():
         'Grade': int(student_data.get('Grade', 9)),
         'Present_Days': int(student_data.get('Present_Days', 150)),
         'Absent_Days': int(student_data.get('Absent_Days', 10)),
-        'Academic_Perf': int(student_data.get('Academic_Perf', 70)),
+        'Academic_Perf': int(student_data.get('Academic_Performance', 70)),
         'Gender': str(student_data.get('Gender', 'Male')),
         'Meal_Code': str(student_data.get('Meal_Code', 'Free'))
     }
