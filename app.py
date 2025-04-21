@@ -238,7 +238,7 @@ def render_individual_prediction():
             return  # Exit early if no data
         
         # Get current-year student IDs (ensure they exist)
-        student_ids = st.session_state.historical_data['Student_ID'].dropna().unique().tolist()
+        student_ids = st.session_state.current_year_data['Student_ID'].dropna().unique().tolist()
         
         if not student_ids:
             st.error("No valid student IDs found in current-year data.")
