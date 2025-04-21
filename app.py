@@ -210,6 +210,28 @@ def render_sidebar():
     return app_mode
 
 # Individual Student Prediction
+def plot_risk_gauge(risk_value):
+    """Create a risk gauge visualization"""
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=risk_value*100,
+        domain={'x': [0, 1], 'y': [0, 1]},
+        title={'text': "Absenteeism Risk Score"},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'steps': [
+                {'range': [0, 30], 'color': "lightgreen"},
+                {'range': [30, 70], 'color': "yellow"},
+                {'range': [70, 100], 'color': "red"}],
+            'threshold': {
+                'line': {'color': "black", 'width': 4},
+                'thickness': 0.75,
+                'value': risk_value*100}
+        }
+    ))
+    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+    return fig
+
 def get_risk_explanation(risk_value, student_data):
     """Generate clear explanation of risk factors"""
     explanations = []
@@ -221,7 +243,7 @@ def get_risk_explanation(risk_value, student_data):
     else:
         explanations.append("✅ **Low Risk Level** (Good attendance patterns)")
     
-    # Attendance factors - FIXED PARENTHESIS ISSUE
+    # Attendance factors
     present_days = student_data.get('Present_Days', 0)
     absent_days = student_data.get('Absent_Days', 1)
     attendance_pct = (present_days / (present_days + absent_days)) * 100
@@ -230,16 +252,15 @@ def get_risk_explanation(risk_value, student_data):
         explanations.append(f"• Low attendance rate ({attendance_pct:.1f}%)")
     
     # Academic factors
-    Academic_Performance = student_data.get('Academic_Performance', 100)
-    if Academic_Performance < 65:
-        explanations.append(f"• Below-average academics ({Academic_Performance}%)")
+    academic_performance = student_data.get('Academic_Performance', 100)
+    if academic_performance < 65:
+        explanations.append(f"• Below-average academics ({academic_performance}%)")
     
     # Socioeconomic factors
     if student_data.get('Meal_Code', '') in ['Free', 'Reduced']:
         explanations.append("• Eligible for meal assistance (potential socioeconomic factors)")
     
     return "\n".join(explanations)
-
 
 def get_recommendation_with_reasons(risk_value, student_data):
     """Generate interventions with explanations based on risk factors"""
@@ -299,8 +320,48 @@ def get_recommendation_with_reasons(risk_value, student_data):
             ))
 
     return interventions
+
+def on_calculate_risk():
+    """Calculate and store the risk prediction in session state"""
+    try:
+        # Get current student ID
+        selected_id = st.session_state.get("student_select")
+        if not selected_id:
+            st.error("No student selected")
+            return
+        
+        # Get all current form values
+        inputs = {
+            'Present_Days': st.session_state.get(f"present_{selected_id}", 150),
+            'Absent_Days': st.session_state.get(f"absent_{selected_id}", 10),
+            'Academic_Performance': st.session_state.get(f"academic_{selected_id}", 70),
+            'Grade': st.session_state.get(f"grade_{selected_id}", 9),
+            'Meal_Code': st.session_state.get(f"meal_{selected_id}", 'Free')
+        }
+        
+        # Calculate attendance rate
+        attendance_rate = inputs['Present_Days'] / (inputs['Present_Days'] + inputs['Absent_Days'])
+        
+        # Calculate academic factor (inverse of performance)
+        academic_factor = 1 - (inputs['Academic_Performance'] / 100)
+        
+        # Simple risk calculation (replace with your actual model)
+        risk_score = (0.6 * (1 - attendance_rate)) + (0.4 * academic_factor)
+        
+        # Store the prediction
+        st.session_state.current_prediction = risk_score
+        st.session_state.current_student_data = inputs
+        
+    except Exception as e:
+        st.error(f"Error calculating risk: {str(e)}")
+        st.session_state.current_prediction = None
+
 def render_individual_prediction():
     """Render the prediction interface with auto-updating fields"""
+    # Initialize session state
+    if 'current_prediction' not in st.session_state:
+        st.session_state.current_prediction = None
+    
     # UI Setup
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>👨‍🎓 Student Risk Analysis</div>", unsafe_allow_html=True)
@@ -366,7 +427,8 @@ def render_individual_prediction():
         with col1:
             # School input with safe options
             school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
-            school_index = school_options.index(current_student['School']) if current_student['School'] in school_options else 0
+            school_value = current_student['School']
+            school_index = school_options.index(school_value) if school_value in school_options else 0
             school = st.selectbox(
                 "School",
                 options=school_options,
@@ -409,7 +471,7 @@ def render_individual_prediction():
         
         with col2:
             # Academic Performance
-            Academic_Performance = st.slider(
+            academic_performance = st.slider(
                 "Academic Performance %",
                 min_value=0,
                 max_value=100,
@@ -418,28 +480,33 @@ def render_individual_prediction():
             )
             
             # Demographic factors
+            gender_options = ["Male", "Female", "Other"]
+            gender_value = current_student['Gender']
+            gender_index = gender_options.index(gender_value) if gender_value in gender_options else 0
             gender = st.selectbox(
                 "Gender",
-                options=["Male", "Female", "Other"],
-                index=["Male", "Female", "Other"].index(current_student['Gender']) 
-                      if current_student['Gender'] in ["Male", "Female", "Other"] else 0,
+                options=gender_options,
+                index=gender_index,
                 key=f"gender_{selected_id}"
             )
             
+            meal_options = ["Free", "Reduced", "Paid"]
+            meal_value = current_student['Meal_Code']
+            meal_index = meal_options.index(meal_value) if meal_value in meal_options else 0
             meal_code = st.selectbox(
                 "Meal Status",
-                options=["Free", "Reduced", "Paid"],
-                index=["Free", "Reduced", "Paid"].index(current_student['Meal_Code']) 
-                      if current_student['Meal_Code'] in ["Free", "Reduced", "Paid"] else 0,
+                options=meal_options,
+                index=meal_index,
                 key=f"meal_{selected_id}"
             )
         
-        # Submit button
+        # Submit button - triggers calculation and refresh
         if st.form_submit_button("Analyze Risk"):
             on_calculate_risk()
+            st.rerun()  # Force refresh to show results
     
     # Results Display
-    if st.session_state.get('current_prediction'):
+    if st.session_state.get('current_prediction') is not None:
         risk_value = st.session_state.current_prediction
         
         # Risk Gauge
@@ -447,11 +514,12 @@ def render_individual_prediction():
         
         # Risk Explanation
         st.markdown("### Risk Analysis")
-        st.markdown(get_risk_explanation(risk_value, current_student))
+        student_data = st.session_state.get('current_student_data', current_student)
+        st.markdown(get_risk_explanation(risk_value, student_data))
         
         # Interventions
         st.markdown("### Recommended Actions")
-        for intervention, reason in get_recommendation_with_reasons(risk_value, current_student):
+        for intervention, reason in get_recommendation_with_reasons(risk_value, student_data):
             st.markdown(f"""
             <div style="padding:10px; margin:8px 0; border-left:4px solid #4CAF50; background:#f8f9fa;">
                 <div style="font-weight:bold;">{intervention}</div>
