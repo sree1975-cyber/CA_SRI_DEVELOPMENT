@@ -213,16 +213,19 @@ def render_sidebar():
 
 # Individual Student Prediction
 
+import streamlit as st
+import plotly.graph_objects as go
+import pandas as pd
+
 def plot_risk_gauge(risk_value):
     """Create a properly sized risk gauge visualization"""
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=risk_value*100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Absenteeism Risk Score", 'font': {'size': 16}},
+        title={'text': "Absenteeism Risk Score", 'font': {'size': 14}},
         gauge={
-            'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
-            'bar': {'color': "darkblue"},
+            'axis': {'range': [None, 100], 'tickwidth': 1},
             'steps': [
                 {'range': [0, 30], 'color': "lightgreen"},
                 {'range': [30, 70], 'color': "yellow"},
@@ -233,13 +236,10 @@ def plot_risk_gauge(risk_value):
                 'value': risk_value*100}
         }
     ))
-    
-    # Set proper figure size and margins
     fig.update_layout(
-        height=300,  # Reduced height
-        width=400,   # Reduced width
-        margin=dict(t=50, b=10, l=50, r=50),
-        font={'size': 12}
+        height=300,  # Fixed height
+        width=400,   # Fixed width
+        margin=dict(t=50, b=10, l=50, r=50)
     )
     return fig
 
@@ -488,20 +488,31 @@ def render_individual_prediction():
     
     if st.session_state.get('current_prediction') is not None:
         risk_value = st.session_state.current_prediction
-        st.plotly_chart(plot_risk_gauge(risk_value), use_container_width=True)
         
-        st.markdown("### Risk Analysis")
-        student_data = st.session_state.get('current_student_data', current_student)
-        st.markdown(get_risk_explanation(risk_value, student_data))
+        # Create columns for better layout
+        col1, col2 = st.columns([1, 2])  # First column narrower for gauge
         
-        st.markdown("### Recommended Actions")
-        for intervention, reason in get_recommendation_with_reasons(risk_value, student_data):
-            st.markdown(f"""
-            <div style="padding:10px; margin:8px 0; border-left:4px solid #4CAF50; background:#f8f9fa;">
-                <div style="font-weight:bold;">{intervention}</div>
-                <div style="color:#555;">{reason}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        with col1:
+            # Display the properly sized gauge
+            st.plotly_chart(
+                plot_risk_gauge(risk_value),
+                use_container_width=True,
+                config={'displayModeBar': False}  # Hide plotly toolbar
+            )
+        
+        with col2:
+            st.markdown("### Risk Analysis")
+            student_data = st.session_state.get('current_student_data', current_student)
+            st.markdown(get_risk_explanation(risk_value, student_data))
+            
+            st.markdown("### Recommended Actions")
+            for intervention, reason in get_recommendation_with_reasons(risk_value, student_data):
+                st.markdown(f"""
+                <div style="padding:10px; margin:8px 0; border-left:4px solid #4CAF50; background:#f8f9fa;">
+                    <div style="font-weight:bold; font-size:14px;">{intervention}</div>
+                    <div style="color:#555; font-size:13px;">{reason}</div>
+                </div>
+                """, unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
 
