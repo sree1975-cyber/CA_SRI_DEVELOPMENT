@@ -213,10 +213,6 @@ def render_sidebar():
 
 # Individual Student Prediction
 
-import streamlit as st
-import plotly.graph_objects as go
-import pandas as pd
-
 def plot_risk_gauge(risk_value):
     """Create a properly sized risk gauge visualization"""
     fig = go.Figure(go.Indicator(
