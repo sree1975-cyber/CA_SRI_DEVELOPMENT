@@ -310,13 +310,28 @@ def render_individual_prediction():
         st.error("No student data loaded. Please upload current-year data first.")
         return
     
-    # Get current students
-    current_students = st.session_state.current_year_data['Student_ID'].dropna().unique().tolist()
-    if not current_students:
-        st.error("No valid student IDs found.")
+    # Verify required columns exist
+    required_columns = ['Student_ID', 'School', 'Grade', 'Present_Days', 
+                       'Absent_Days', 'Academic_Perf', 'Gender', 'Meal_Code']
+    
+    missing_columns = [col for col in required_columns 
+                      if col not in st.session_state.current_year_data.columns]
+    
+    if missing_columns:
+        st.error(f"Uploaded data is missing required columns: {', '.join(missing_columns)}")
         return
     
-    # Student Selection - THIS CONTROLS ALL UPDATES
+    # Get current students
+    try:
+        current_students = st.session_state.current_year_data['Student_ID'].dropna().unique().tolist()
+        if not current_students:
+            st.error("No valid student IDs found in the data.")
+            return
+    except Exception as e:
+        st.error(f"Error processing student data: {str(e)}")
+        return
+    
+    # Student Selection
     selected_id = st.selectbox(
         "Select Student",
         options=current_students,
@@ -324,20 +339,34 @@ def render_individual_prediction():
         key="student_select"
     )
     
-    # Get CURRENT student data - this will refresh when selected_id changes
-    current_student = st.session_state.current_year_data[
-        st.session_state.current_year_data['Student_ID'] == selected_id
-    ].iloc[0]
+    # Get CURRENT student data with error handling
+    try:
+        student_data = st.session_state.current_year_data[
+            st.session_state.current_year_data['Student_ID'] == selected_id
+        ].iloc[0]
+    except IndexError:
+        st.error("Selected student not found in data.")
+        return
     
-    # Display ALL fields from the current student's record
+    # Create a dictionary with safe defaults
+    current_student = {
+        'School': str(student_data.get('School', 'North High')),
+        'Grade': int(student_data.get('Grade', 9)),
+        'Present_Days': int(student_data.get('Present_Days', 150)),
+        'Absent_Days': int(student_data.get('Absent_Days', 10)),
+        'Academic_Perf': int(student_data.get('Academic_Perf', 70)),
+        'Gender': str(student_data.get('Gender', 'Male')),
+        'Meal_Code': str(student_data.get('Meal_Code', 'Free'))
+    }
+    
+    # Auto-updating Form
     with st.form(key="student_form"):
         col1, col2 = st.columns(2)
         
         with col1:
-            # School - directly from data, with safe default
+            # School input with safe options
             school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
-            current_school = str(current_student.get('School', 'North High'))
-            school_index = school_options.index(current_school) if current_school in school_options else 0
+            school_index = school_options.index(current_student['School']) if current_student['School'] in school_options else 0
             school = st.selectbox(
                 "School",
                 options=school_options,
@@ -345,21 +374,21 @@ def render_individual_prediction():
                 key=f"school_{selected_id}"
             )
             
-            # Grade - directly from data
+            # Grade input
             grade = st.number_input(
                 "Grade",
                 min_value=1,
                 max_value=12,
-                value=int(current_student.get('Grade', 9)),
+                value=current_student['Grade'],
                 key=f"grade_{selected_id}"
             )
             
-            # Attendance - directly from data
+            # Attendance
             present_days = st.number_input(
                 "Present Days",
                 min_value=0,
                 max_value=200,
-                value=int(current_student.get('Present_Days', 150)),
+                value=current_student['Present_Days'],
                 key=f"present_{selected_id}"
             )
             
@@ -367,7 +396,7 @@ def render_individual_prediction():
                 "Absent Days",
                 min_value=0,
                 max_value=200,
-                value=int(current_student.get('Absent_Days', 10)),
+                value=current_student['Absent_Days'],
                 key=f"absent_{selected_id}"
             )
             
@@ -379,46 +408,48 @@ def render_individual_prediction():
             )
         
         with col2:
-            # Academic Performance - directly from data
+            # Academic Performance
             academic_perf = st.slider(
                 "Academic Performance %",
                 min_value=0,
                 max_value=100,
-                value=int(current_student.get('Academic_Perf', 70)),
+                value=current_student['Academic_Perf'],
                 key=f"academic_{selected_id}"
             )
             
-            # Demographic factors - directly from data
-            gender_options = ["Male", "Female", "Other"]
-            current_gender = str(current_student.get('Gender', 'Male'))
-            gender_index = gender_options.index(current_gender) if current_gender in gender_options else 0
+            # Demographic factors
             gender = st.selectbox(
                 "Gender",
-                options=gender_options,
-                index=gender_index,
+                options=["Male", "Female", "Other"],
+                index=["Male", "Female", "Other"].index(current_student['Gender']) 
+                      if current_student['Gender'] in ["Male", "Female", "Other"] else 0,
                 key=f"gender_{selected_id}"
             )
             
-            meal_options = ["Free", "Reduced", "Paid"]
-            current_meal = str(current_student.get('Meal_Code', 'Free'))
-            meal_index = meal_options.index(current_meal) if current_meal in meal_options else 0
             meal_code = st.selectbox(
                 "Meal Status",
-                options=meal_options,
-                index=meal_index,
+                options=["Free", "Reduced", "Paid"],
+                index=["Free", "Reduced", "Paid"].index(current_student['Meal_Code']) 
+                      if current_student['Meal_Code'] in ["Free", "Reduced", "Paid"] else 0,
                 key=f"meal_{selected_id}"
             )
         
         # Submit button
         if st.form_submit_button("Analyze Risk"):
-            on_calculate_risk()  # Your prediction function
+            on_calculate_risk()
     
-    # Results Display (unchanged)
+    # Results Display
     if st.session_state.get('current_prediction'):
         risk_value = st.session_state.current_prediction
+        
+        # Risk Gauge
         st.plotly_chart(plot_risk_gauge(risk_value), use_container_width=True)
+        
+        # Risk Explanation
         st.markdown("### Risk Analysis")
         st.markdown(get_risk_explanation(risk_value, current_student))
+        
+        # Interventions
         st.markdown("### Recommended Actions")
         for intervention, reason in get_recommendation_with_reasons(risk_value, current_student):
             st.markdown(f"""
