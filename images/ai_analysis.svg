@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradAnalytics" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#81C784;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect x="25" y="25" width="150" height="150" rx="15" fill="url(#gradAnalytics)"/>
+  
+  <!-- Brain icon -->
+  <path d="M100,50 C130,50 140,70 140,85 C140,100 130,110 120,115 C120,125 110,130 100,130 C90,130 80,125 80,115 C70,110 60,100 60,85 C60,70 70,50 100,50 Z" 
+        fill="white" opacity="0.9"/>
+  
+  <!-- Neural network connections -->
+  <circle cx="80" cy="70" r="5" fill="#4CAF50"/>
+  <circle cx="120" cy="70" r="5" fill="#4CAF50"/>
+  <circle cx="70" cy="90" r="5" fill="#4CAF50"/>
+  <circle cx="100" cy="90" r="5" fill="#4CAF50"/>
+  <circle cx="130" cy="90" r="5" fill="#4CAF50"/>
+  <circle cx="85" cy="110" r="5" fill="#4CAF50"/>
+  <circle cx="115" cy="110" r="5" fill="#4CAF50"/>
+  
+  <!-- Connections -->
+  <line x1="80" y1="70" x2="70" y2="90" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="80" y1="70" x2="100" y2="90" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="120" y1="70" x2="100" y2="90" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="120" y1="70" x2="130" y2="90" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="70" y1="90" x2="85" y2="110" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="100" y1="90" x2="85" y2="110" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="100" y1="90" x2="115" y2="110" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="130" y1="90" x2="115" y2="110" stroke="#4CAF50" stroke-width="2"/>
+  
+  <!-- Analysis chart -->
+  <rect x="60" y="130" width="80" height="30" rx="5" fill="white" opacity="0.9"/>
+  <line x1="70" y1="150" x2="130" y2="150" stroke="#4CAF50" stroke-width="1"/>
+  <line x1="70" y1="150" x2="70" y2="140" stroke="#4CAF50" stroke-width="1"/>
+  <polyline points="70,145 80,140 90,143 100,135 110,142 120,138 130,145" 
+          stroke="#4CAF50" stroke-width="2" fill="none"/>
+</svg>
