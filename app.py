@@ -210,210 +210,160 @@ def render_sidebar():
     return app_mode
 
 # Individual Student Prediction
-def get_recommendation_with_reasons(risk_value, student_data):
-    """Generate interventions with explanations based on risk factors"""
-    interventions = []
+def get_risk_explanation(risk_value, student_data):
+    """Generate clear explanation of risk factors"""
+    explanations = []
     
-    # High Risk (>= 70%)
     if risk_value >= 0.7:
-        interventions.append((
-            "🚨 Immediate 1-on-1 meeting with school counselor",
-            "Student is at very high risk of chronic absenteeism based on current patterns"
-        ))
-        interventions.append((
-            "📞 Parent/guardian conference within 48 hours",
-            "Early family engagement is critical for high-risk cases"
-        ))
-        
-        if student_data.get('Absent_Days', 0) > 15:
-            interventions.append((
-                "🩺 Schedule health checkup",
-                f"High absence days ({student_data.get('Absent_Days')} days) may indicate health concerns"
-            ))
-            
-        if student_data.get('Academic_Perf', 70) < 60:
-            interventions.append((
-                "📚 Assign academic support tutor",
-                f"Low academic performance ({student_data.get('Academic_Perf')}%) is correlated with dropout risk"
-            ))
-
-    # Medium Risk (30-69%)
-    elif risk_value >= 0.3:
-        interventions.append((
-            "📅 Weekly check-ins with homeroom teacher",
-            "Regular monitoring can prevent escalation to high risk"
-        ))
-        interventions.append((
-            "✉️ Send personalized attendance report to family",
-            "Family awareness improves intervention effectiveness"
-        ))
-        
-        if student_data.get('Meal_Code', '') in ['Free', 'Reduced']:
-            interventions.append((
-                "🍎 Connect with nutrition support programs",
-                "Food insecurity may be contributing factor"
-            ))
-
-    # Low Risk (<30%)
+        explanations.append("🚨 **Critical Risk Level** (70%+ probability of chronic absenteeism)")
+    elif risk_value >= 0.4:
+        explanations.append("⚠️ **Elevated Risk Level** (40-69% probability)")
     else:
-        interventions.append((
-            "👍 Positive reinforcement for good attendance",
-            "Maintaining good patterns prevents future risk"
-        ))
-        
-        if student_data.get('Present_Days', 0) < 160:
-            interventions.append((
-                "🎯 Set attendance improvement goal",
-                f"Current {student_data.get('Present_Days', 0)} present days has room for improvement"
-            ))
-
-    return interventions
+        explanations.append("✅ **Low Risk Level** (Good attendance patterns)")
+    
+    # Attendance factors
+    attendance_pct = (student_data.get('Present_Days', 0) / 
+                    (student_data.get('Present_Days', 0) + student_data.get('Absent_Days', 1)) * 100
+    if attendance_pct < 85:
+        explanations.append(f"• Low attendance rate ({attendance_pct:.1f}%)")
+    
+    # Academic factors
+    if student_data.get('Academic_Perf', 100) < 65:
+        explanations.append(f"• Below-average academics ({student_data.get('Academic_Perf')}%)")
+    
+    # Socioeconomic factors
+    if student_data.get('Meal_Code', '') in ['Free', 'Reduced']:
+        explanations.append("• Eligible for meal assistance (potential socioeconomic factors)")
+    
+    return "\n".join(explanations)
 
 def render_individual_prediction():
-    """Render the Individual Student Prediction section"""
-    # Individual prediction card
+    """Render the prediction interface with auto-updating fields"""
+    # UI Setup
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>👨‍🎓 Current-Year Student Prediction</div>", unsafe_allow_html=True)
+    st.markdown("<div class='card-title'>👨‍🎓 Student Risk Analysis</div>", unsafe_allow_html=True)
     
-    # Check if current-year data exists
-    if 'current_year_data' not in st.session_state or st.session_state.current_year_data.empty:
-        st.error("No current-year student data loaded. Please upload current-year data first.")
+    # Data Validation
+    if 'current_year_data' not in st.session_state:
+        st.error("No student data loaded. Please upload current-year data first.")
         return
     
-    # Get current-year student IDs
+    # Get current students
     current_students = st.session_state.current_year_data['Student_ID'].dropna().unique().tolist()
-    
     if not current_students:
-        st.error("No valid student IDs found in current-year data.")
+        st.error("No valid student IDs found.")
         return
     
-    # Student selection at the top (outside form)
-    if 'current_student_select' not in st.session_state:
-        st.session_state.current_student_select = current_students[0]
-    
-    student_select = st.selectbox(
-        "Select Current-Year Student",
+    # Student Selection
+    selected_id = st.selectbox(
+        "Select Student",
         options=current_students,
-        index=current_students.index(st.session_state.current_student_select),
-        key="student_select_widget"
+        index=0,
+        key="student_select"
     )
     
-    # Update session state when selection changes
-    st.session_state.current_student_select = student_select
+    # Get CURRENT student data (auto-updates on selection change)
+    current_student = st.session_state.current_year_data[
+        st.session_state.current_year_data['Student_ID'] == selected_id
+    ].iloc[0].to_dict()
     
-    # Get student data
-    student_data = st.session_state.current_year_data[
-        st.session_state.current_year_data['Student_ID'] == student_select
-    ].iloc[0]
-    
-    # Create form with current student's data
-    with st.form(key="ca_input_form"):
-        st.markdown("<div class='card-subtitle'>📝 Student Details</div>", unsafe_allow_html=True)
-        
+    # Auto-updating Form
+    with st.form(key="student_form"):
         col1, col2 = st.columns(2)
         
         with col1:
-            # School input with safe default
-            school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
-            school_value = student_data.get('School', 'North High')
-            try:
-                school_index = school_options.index(school_value)
-            except ValueError:
-                school_index = 0
-            
+            # School (with safe default)
             school = st.selectbox(
                 "School",
-                options=school_options,
-                index=school_index,
-                key="school_input"
+                options=["North High", "South High", "East Middle", "West Elementary", "Central Academy"],
+                index=0,
+                key=f"school_{selected_id}"  # Unique key per student
             )
             
-            # Grade input
+            # Grade
             grade = st.number_input(
                 "Grade",
                 min_value=1,
                 max_value=12,
-                value=int(student_data.get('Grade', 9)),
-                key="grade_input"
+                value=int(current_student.get('Grade', 9)),
+                key=f"grade_{selected_id}"
             )
             
-            # Gender input
-            gender = st.selectbox(
-                "Gender",
-                options=["Male", "Female"],
-                index=0 if student_data.get('Gender', 'Male') == "Male" else 1,
-                key="gender_input"
-            )
-            
-            # Meal code
-            meal_code = st.selectbox(
-                "Meal Code",
-                options=["Free", "Reduced", "Paid"],
-                index=0 if student_data.get('Meal_Code', 'Free') == "Free" else 1,
-                key="meal_code_input"
-            )
-        
-        with col2:
-            # Attendance details
+            # Attendance
             present_days = st.number_input(
                 "Present Days",
                 min_value=0,
                 max_value=200,
-                value=int(student_data.get('Present_Days', 150)),
-                key="present_days_input"
+                value=int(current_student.get('Present_Days', 150)),
+                key=f"present_{selected_id}"
             )
             
             absent_days = st.number_input(
                 "Absent Days",
                 min_value=0,
                 max_value=200,
-                value=int(student_data.get('Absent_Days', 10)),
-                key="absent_days_input"
+                value=int(current_student.get('Absent_Days', 10)),
+                key=f"absent_{selected_id}"
             )
             
-            # Calculate attendance percentage
+            # Auto-calculated attendance
             total_days = present_days + absent_days
-            attendance_pct = (present_days / total_days * 100) if total_days > 0 else 0
-            st.metric("Attendance Percentage", f"{attendance_pct:.1f}%")
-            
-            # Academic performance
+            st.metric(
+                "Attendance Rate", 
+                f"{(present_days/total_days*100 if total_days>0 else 0):.1f}%"
+            )
+        
+        with col2:
+            # Academic Performance (NOW AUTO-UPDATING)
             academic_perf = st.slider(
-                "Academic Performance",
+                "Academic Performance %",
                 min_value=0,
                 max_value=100,
-                value=int(student_data.get('Academic_Perf', 70)),
-                key="academic_perf_input"
+                value=int(current_student.get('Academic_Perf', 70)),
+                key=f"academic_{selected_id}"
+            )
+            
+            # Demographic factors
+            gender = st.selectbox(
+                "Gender",
+                options=["Male", "Female", "Other"],
+                index=["Male", "Female", "Other"].index(current_student.get('Gender', 'Male')),
+                key=f"gender_{selected_id}"
+            )
+            
+            meal_code = st.selectbox(
+                "Meal Status",
+                options=["Free", "Reduced", "Paid"],
+                index=["Free", "Reduced", "Paid"].index(current_student.get('Meal_Code', 'Free')),
+                key=f"meal_{selected_id}"
             )
         
         # Submit button
-        submitted = st.form_submit_button("Calculate CA Risk")
-        if submitted:
+        if st.form_submit_button("Analyze Risk"):
             on_calculate_risk()  # Your existing prediction function
     
-    # Results display (outside form)
-    st.markdown("<div class='card-subtitle'>🔍 Risk Assessment</div>", unsafe_allow_html=True)
-    
-    if st.session_state.get('current_prediction') is not None:
+    # Results Display
+    if st.session_state.get('current_prediction'):
         risk_value = st.session_state.current_prediction
-        risk_fig = plot_risk_gauge(risk_value)
-        if risk_fig:
-            st.plotly_chart(risk_fig, use_container_width=True)
         
-        st.markdown("### Recommended Interventions")
-        recommendations = get_recommendation_with_reasons(risk_value, student_data)
+        # Risk Gauge
+        st.plotly_chart(plot_risk_gauge(risk_value), use_container_width=True)
         
-        for intervention, reason in recommendations:
+        # Clear Risk Explanation
+        st.markdown("### Risk Analysis")
+        st.markdown(get_risk_explanation(risk_value, current_student))
+        
+        # Interventions
+        st.markdown("### Recommended Actions")
+        for intervention, reason in get_recommendation_with_reasons(risk_value, current_student):
             st.markdown(f"""
-            <div style="padding: 10px; margin: 10px 0; border-left: 4px solid #4CAF50; background-color: #f8f9fa;">
-                <div style="font-size: 16px; margin-bottom: 5px;"><b>{intervention}</b></div>
-                <div style="font-size: 14px; color: #555; font-style: italic;">Why: {reason}</div>
+            <div style="padding:10px; margin:8px 0; border-left:4px solid #4CAF50; background:#f8f9fa;">
+                <div style="font-weight:bold; font-size:15px;">{intervention}</div>
+                <div style="color:#555; font-size:13px;">{reason}</div>
             </div>
             """, unsafe_allow_html=True)
-    else:
-        st.info("Select a student and click 'Calculate CA Risk' to see prediction.")
     
     st.markdown("</div>", unsafe_allow_html=True)
-
 # Main application
 def main():
     """Main application entry point"""
