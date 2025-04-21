@@ -305,10 +305,6 @@ def render_individual_prediction():
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
     st.markdown("<div class='card-title'>👨‍🎓 Student Risk Analysis</div>", unsafe_allow_html=True)
     
-    # Initialize session state variables if they don't exist
-    if 'current_prediction' not in st.session_state:
-        st.session_state.current_prediction = None
-    
     # Data Validation
     if 'current_year_data' not in st.session_state:
         st.error("No student data loaded. Please upload current-year data first.")
@@ -320,39 +316,28 @@ def render_individual_prediction():
         st.error("No valid student IDs found.")
         return
     
-    # Initialize student selection if not exists
-    if 'current_student_select' not in st.session_state:
-        st.session_state.current_student_select = current_students[0]
-    
-    # Student Selection
+    # Student Selection - THIS CONTROLS ALL UPDATES
     selected_id = st.selectbox(
         "Select Student",
         options=current_students,
-        index=current_students.index(st.session_state.current_student_select),
-        key="student_select_widget"
+        index=0,
+        key="student_select"
     )
     
-    # Update session state when selection changes
-    st.session_state.current_student_select = selected_id
-    
-    # Get CURRENT student data
+    # Get CURRENT student data - this will refresh when selected_id changes
     current_student = st.session_state.current_year_data[
         st.session_state.current_year_data['Student_ID'] == selected_id
-    ].iloc[0].to_dict()
+    ].iloc[0]
     
-    # Auto-updating Form
+    # Display ALL fields from the current student's record
     with st.form(key="student_form"):
         col1, col2 = st.columns(2)
         
         with col1:
-            # School (with safe default)
+            # School - directly from data, with safe default
             school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
-            school_value = current_student.get('School', 'North High')
-            try:
-                school_index = school_options.index(school_value)
-            except ValueError:
-                school_index = 0
-            
+            current_school = str(current_student.get('School', 'North High'))
+            school_index = school_options.index(current_school) if current_school in school_options else 0
             school = st.selectbox(
                 "School",
                 options=school_options,
@@ -360,7 +345,7 @@ def render_individual_prediction():
                 key=f"school_{selected_id}"
             )
             
-            # Grade
+            # Grade - directly from data
             grade = st.number_input(
                 "Grade",
                 min_value=1,
@@ -369,7 +354,7 @@ def render_individual_prediction():
                 key=f"grade_{selected_id}"
             )
             
-            # Attendance
+            # Attendance - directly from data
             present_days = st.number_input(
                 "Present Days",
                 min_value=0,
@@ -394,7 +379,7 @@ def render_individual_prediction():
             )
         
         with col2:
-            # Academic Performance
+            # Academic Performance - directly from data
             academic_perf = st.slider(
                 "Academic Performance %",
                 min_value=0,
@@ -403,11 +388,10 @@ def render_individual_prediction():
                 key=f"academic_{selected_id}"
             )
             
-            # Demographic factors
+            # Demographic factors - directly from data
             gender_options = ["Male", "Female", "Other"]
-            gender_value = current_student.get('Gender', 'Male')
-            gender_index = gender_options.index(gender_value) if gender_value in gender_options else 0
-            
+            current_gender = str(current_student.get('Gender', 'Male'))
+            gender_index = gender_options.index(current_gender) if current_gender in gender_options else 0
             gender = st.selectbox(
                 "Gender",
                 options=gender_options,
@@ -416,9 +400,8 @@ def render_individual_prediction():
             )
             
             meal_options = ["Free", "Reduced", "Paid"]
-            meal_value = current_student.get('Meal_Code', 'Free')
-            meal_index = meal_options.index(meal_value) if meal_value in meal_options else 0
-            
+            current_meal = str(current_student.get('Meal_Code', 'Free'))
+            meal_index = meal_options.index(current_meal) if current_meal in meal_options else 0
             meal_code = st.selectbox(
                 "Meal Status",
                 options=meal_options,
@@ -428,36 +411,20 @@ def render_individual_prediction():
         
         # Submit button
         if st.form_submit_button("Analyze Risk"):
-            # Store current inputs in session state
-            st.session_state.school_input = school
-            st.session_state.grade_input = grade
-            st.session_state.present_days_input = present_days
-            st.session_state.absent_days_input = absent_days
-            st.session_state.academic_perf_input = academic_perf
-            st.session_state.gender_input = gender
-            st.session_state.meal_code_input = meal_code
-            
-            # Call prediction function
-            on_calculate_risk()
+            on_calculate_risk()  # Your prediction function
     
-    # Results Display
+    # Results Display (unchanged)
     if st.session_state.get('current_prediction'):
         risk_value = st.session_state.current_prediction
-        
-        # Risk Gauge
         st.plotly_chart(plot_risk_gauge(risk_value), use_container_width=True)
-        
-        # Clear Risk Explanation
         st.markdown("### Risk Analysis")
         st.markdown(get_risk_explanation(risk_value, current_student))
-        
-        # Interventions
         st.markdown("### Recommended Actions")
         for intervention, reason in get_recommendation_with_reasons(risk_value, current_student):
             st.markdown(f"""
             <div style="padding:10px; margin:8px 0; border-left:4px solid #4CAF50; background:#f8f9fa;">
-                <div style="font-weight:bold; font-size:15px;">{intervention}</div>
-                <div style="color:#555; font-size:13px;">{reason}</div>
+                <div style="font-weight:bold;">{intervention}</div>
+                <div style="color:#555;">{reason}</div>
             </div>
             """, unsafe_allow_html=True)
     
