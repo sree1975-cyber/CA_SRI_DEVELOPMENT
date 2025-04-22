@@ -1228,9 +1228,7 @@ def display_svg(file_path, width=None):
     if width:
         # Add width attribute to the SVG tag
         content = content.replace("<svg ", f"<svg width='{width}' ")
-        
-    return content
-# Add collapsible section for description
+    # Add collapsible section for description
     with st.expander("What are Temporal Attendance Trends?"):
         st.markdown("""
         **Definition:**
@@ -1249,3 +1247,6 @@ def display_svg(file_path, width=None):
         - **Term-wise**: "Which term (semester) has the lowest attendance?" | Plan important events during high-attendance periods.
         - **Yearly Comparison**: "Did the new reward system improve attendance vs. last year?" | Measure policy effectiveness.
         """)
+        
+    return content
+
