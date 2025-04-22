@@ -687,137 +687,116 @@ def render_advanced_analytics():
         else:
             st.info("Historical data not available for analysis.")
 
-   # Temporal Attendance Trends tab
-with analytics_tabs[5]:
-    st.markdown("<div class='card-title'>📅 Temporal Attendance Trends</div>", unsafe_allow_html=True)
-    
-    # Add collapsible section for description
-    with st.expander("What are Temporal Attendance Trends?"):
-        st.markdown("""
-        **Definition:**
-        Temporal Attendance Trends in schools refer to patterns in student attendance over different time periods (daily, weekly, monthly, or yearly). 
-        This helps educators and administrators identify:
+    # Temporal Attendance Trends tab
+    with analytics_tabs[5]:
+        st.markdown("<div class='card-title'>📅 Temporal Attendance Trends</div>", unsafe_allow_html=True)
         
-        - **Peak absenteeism periods** (e.g., before holidays, exam days).
-        - **Impact of school policies** (e.g., stricter rules improving punctuality).
-        - **Seasonal influences** (e.g., flu season, monsoon affecting attendance).
-        
-        **How to Define & Analyze Student Attendance Trends?**
-        1. **Key Time-Based Trends to Track**
-        - **Trend Type**: Example Questions | Why It Matters
-        - **Daily Trends**: "Do more students miss school on Mondays/Fridays?" | Adjust motivational Monday assemblies or weekend homework load.
-        - **Weekly/Monthly**: "Is attendance dropping before exams?" | Identify stress-related absenteeism & offer counseling.
-        - **Term-wise**: "Which term (semester) has the lowest attendance?" | Plan important events during high-attendance periods.
-        - **Yearly Comparison**: "Did the new reward system improve attendance vs. last year?" | Measure policy effectiveness.
-        """)
-    
-    # The rest of the existing temporal trends code (visualization, analysis, etc.)
-    if 'historical_data' in st.session_state and not st.session_state.historical_data.empty:
-        # Check for 'Year' column
-        if 'Year' in st.session_state.historical_data.columns:
-            # Check for attendance columns
-            attendance_col = None
-            for col in ['Attendance_Percentage', 'Present_Days', 'Absent_Days']:
-                if col in st.session_state.historical_data.columns:
-                    attendance_col = col
-                    break
-            
-            if attendance_col:
-                # Group by year
-                yearly_trends = st.session_state.historical_data.groupby('Year')[attendance_col].mean().reset_index()
+        if 'historical_data' in st.session_state and not st.session_state.historical_data.empty:
+            # Check for 'Year' column
+            if 'Year' in st.session_state.historical_data.columns:
+                # Check for attendance columns
+                attendance_col = None
+                for col in ['Attendance_Percentage', 'Present_Days', 'Absent_Days']:
+                    if col in st.session_state.historical_data.columns:
+                        attendance_col = col
+                        break
                 
-                # Create time series visualization
-                st.markdown("### Attendance Trends Over Time")
-                
-                fig = px.line(
-                    yearly_trends,
-                    x='Year',
-                    y=attendance_col,
-                    markers=True,
-                    labels={attendance_col: "Average Attendance"},
-                    title="Attendance Trends by Year"
-                )
-                
-                fig.update_layout(
-                    xaxis_title="Year",
-                    yaxis_title="Average Attendance",
-                    margin=dict(l=20, r=20, t=30, b=10),
-                )
-                
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Add year-on-year change calculation
-                if len(yearly_trends) > 1:
-                    yearly_trends['Change'] = yearly_trends[attendance_col].diff()
-                    yearly_trends['Percent_Change'] = yearly_trends[attendance_col].pct_change() * 100
+                if attendance_col:
+                    # Group by year
+                    yearly_trends = st.session_state.historical_data.groupby('Year')[attendance_col].mean().reset_index()
                     
-                    # Display change data
-                    st.markdown("### Year-on-Year Attendance Changes")
+                    # Create time series visualization
+                    st.markdown("### Attendance Trends Over Time")
                     
-                    # Format the change data
-                    display_df = yearly_trends.copy()
-                    display_df[attendance_col] = display_df[attendance_col].round(2)
-                    display_df['Change'] = display_df['Change'].round(2)
-                    display_df['Percent_Change'] = display_df['Percent_Change'].round(2)
-                    
-                    # Add % symbol to percent change
-                    display_df['Percent_Change'] = display_df['Percent_Change'].apply(
-                        lambda x: f"{x}%" if not pd.isna(x) else ""
-                    )
-                    
-                    st.dataframe(display_df, use_container_width=True)
-                    
-                    # Create a bar chart for changes
-                    fig2 = px.bar(
-                        yearly_trends.iloc[1:],  # Skip first row (no change data)
-                        x='Year',
-                        y='Change',
-                        labels={'Change': f"Change in {attendance_col}"},
-                        title="Year-on-Year Attendance Change",
-                        color='Change',
-                        color_continuous_scale='RdYlGn'
-                    )
-                    
-                    fig2.update_layout(
-                        xaxis_title="Year",
-                        yaxis_title=f"Change in {attendance_col}",
-                        margin=dict(l=20, r=20, t=30, b=10),
-                    )
-                    
-                    st.plotly_chart(fig2, use_container_width=True)
-                
-                # School-level trends if school data is available
-                if 'School' in st.session_state.historical_data.columns:
-                    st.markdown("### Attendance Trends by School")
-                    
-                    # Group by year and school
-                    school_trends = st.session_state.historical_data.groupby(['Year', 'School'])[attendance_col].mean().reset_index()
-                    
-                    # Create multi-line chart
-                    fig3 = px.line(
-                        school_trends,
+                    fig = px.line(
+                        yearly_trends,
                         x='Year',
                         y=attendance_col,
-                        color='School',
                         markers=True,
                         labels={attendance_col: "Average Attendance"},
-                        title="Attendance Trends by School and Year"
+                        title="Attendance Trends by Year"
                     )
                     
-                    fig3.update_layout(
+                    fig.update_layout(
                         xaxis_title="Year",
                         yaxis_title="Average Attendance",
-                        legend_title="School",
                         margin=dict(l=20, r=20, t=30, b=10),
                     )
                     
-                    st.plotly_chart(fig3, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Add year-on-year change calculation
+                    if len(yearly_trends) > 1:
+                        yearly_trends['Change'] = yearly_trends[attendance_col].diff()
+                        yearly_trends['Percent_Change'] = yearly_trends[attendance_col].pct_change() * 100
+                        
+                        # Display change data
+                        st.markdown("### Year-on-Year Attendance Changes")
+                        
+                        # Format the change data
+                        display_df = yearly_trends.copy()
+                        display_df[attendance_col] = display_df[attendance_col].round(2)
+                        display_df['Change'] = display_df['Change'].round(2)
+                        display_df['Percent_Change'] = display_df['Percent_Change'].round(2)
+                        
+                        # Add % symbol to percent change
+                        display_df['Percent_Change'] = display_df['Percent_Change'].apply(
+                            lambda x: f"{x}%" if not pd.isna(x) else ""
+                        )
+                        
+                        st.dataframe(display_df, use_container_width=True)
+                        
+                        # Create a bar chart for changes
+                        fig2 = px.bar(
+                            yearly_trends.iloc[1:],  # Skip first row (no change data)
+                            x='Year',
+                            y='Change',
+                            labels={'Change': f"Change in {attendance_col}"},
+                            title="Year-on-Year Attendance Change",
+                            color='Change',
+                            color_continuous_scale='RdYlGn'
+                        )
+                        
+                        fig2.update_layout(
+                            xaxis_title="Year",
+                            yaxis_title=f"Change in {attendance_col}",
+                            margin=dict(l=20, r=20, t=30, b=10),
+                        )
+                        
+                        st.plotly_chart(fig2, use_container_width=True)
+                    
+                    # School-level trends if school data is available
+                    if 'School' in st.session_state.historical_data.columns:
+                        st.markdown("### Attendance Trends by School")
+                        
+                        # Group by year and school
+                        school_trends = st.session_state.historical_data.groupby(['Year', 'School'])[attendance_col].mean().reset_index()
+                        
+                        # Create multi-line chart
+                        fig3 = px.line(
+                            school_trends,
+                            x='Year',
+                            y=attendance_col,
+                            color='School',
+                            markers=True,
+                            labels={attendance_col: "Average Attendance"},
+                            title="Attendance Trends by School and Year"
+                        )
+                        
+                        fig3.update_layout(
+                            xaxis_title="Year",
+                            yaxis_title="Average Attendance",
+                            legend_title="School",
+                            margin=dict(l=20, r=20, t=30, b=10),
+                        )
+                        
+                        st.plotly_chart(fig3, use_container_width=True)
+                else:
+                    st.info("Attendance data columns not found in historical data.")
             else:
-                st.info("Attendance data columns not found in historical data.")
+                st.info("Year information not found in historical data.")
         else:
-            st.info("Year information not found in historical data.")
-    else:
-        st.info("Historical data not available for analysis.")
+            st.info("Historical data not available for analysis.")
     
     # Cohort Analysis tab
     with analytics_tabs[6]:
