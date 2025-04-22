@@ -400,7 +400,7 @@ def render_individual_prediction():
         return
     
     current_student = {
-        'School': str(student_data.get('School', 'North High')),
+        'School': str(student_data.get('School', '')),
         'Grade': int(student_data.get('Grade', 9)),
         'Present_Days': int(student_data.get('Present_Days', 150)),
         'Absent_Days': int(student_data.get('Absent_Days', 10)),
@@ -413,13 +413,21 @@ def render_individual_prediction():
         col1, col2 = st.columns(2)
         
         with col1:
-            #school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
+            # Get unique schools from the data to populate options
+            school_options = st.session_state.current_year_data['School'].dropna().unique().tolist()
+            # If no schools found in data, use default options
+            if not school_options:
+                school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
+            
             school_value = current_student['School']
+            # If the school value from data isn't in options, add it
+            if school_value and school_value not in school_options:
+                school_options.append(school_value)
+            
             school_index = school_options.index(school_value) if school_value in school_options else 0
             st.selectbox(
                 "School",
-               # options=school_options,
-                options= school_value,
+                options=school_options,
                 index=school_index,
                 key=f"school_{selected_id}"
             )
@@ -528,7 +536,7 @@ def render_individual_prediction():
             
             # Add attendance warning if applicable
             if student_data.get('Attendance_Percentage', 100) <= 90:
-                st.warning("⚠️ High risk due to attendance ≤90%")
+                st.warning("⚠️ Student meets risk criteria due to low attendance")
             
             st.markdown(get_risk_explanation(risk_value, student_data))
             
@@ -542,6 +550,7 @@ def render_individual_prediction():
                 """, unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
+
 # Main application
 def main():
     """Main application entry point"""
