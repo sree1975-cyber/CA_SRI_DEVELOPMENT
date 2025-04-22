@@ -18,7 +18,7 @@ def render_model_params_tab():
             "Machine Learning Model",
             options=[
                 "Random Forest",
-                "Gradient Boosting",
+                "Gradient_Boost",
                 "Logistic Regression",
                 "Neural Network"
             ],
@@ -50,7 +50,7 @@ def render_model_params_tab():
                 }
             }
         
-        elif model_type_key == "gradient_boosting":
+        elif model_type_key == "gradient_boost":
             n_estimators = st.slider("Number of Boosting Stages", 10, 500, 100, 10)
             learning_rate = st.slider("Learning Rate", 0.01, 0.5, 0.1, 0.01)
             max_depth = st.slider("Maximum Tree Depth", 2, 10, 3, 1)
@@ -216,9 +216,9 @@ def render_model_params_tab():
             - **Minimum Samples to Split**: The minimum number of samples required to split a node
             """)
         
-        elif model_type_key == "gradient_boosting":
+        elif model_type_key == "gradient_boost":
             st.markdown("""
-            **Gradient Boosting** builds an ensemble of decision trees sequentially, with each new tree 
+            **Gradient_Boost** builds an ensemble of decision trees sequentially, with each new tree 
             correcting errors made by previously trained trees.
             
             *Advantages:*
