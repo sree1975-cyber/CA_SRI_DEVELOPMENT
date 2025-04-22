@@ -33,15 +33,12 @@ def display_svg(file_path, width=None):
         
     return content
 
-import numpy as np
-import pandas as pd
-
 def generate_sample_data():
-    """Generate sample data with specific attendance patterns"""
+    """Generate sample data with specific attendance patterns including 15-25% attendance group"""
     np.random.seed(42)  # For reproducibility
     
     # Define parameters
-    num_students = 200
+    num_students = 500  # Increased to 500 students
     current_year = 2023
     total_school_days = 180
     
@@ -58,16 +55,21 @@ def generate_sample_data():
     # Gender
     genders = np.random.choice(["Male", "Female"], num_students)
     
-    # Create specific attendance patterns
+    # Create specific attendance patterns including 15-25% group
     attendance_groups = [
-        (0.20, 0.50),   # Below 50% attendance
+        (0.15, 0.25),   # 15-25% attendance (new group)
+        (0.20, 0.50),   # 20-50% attendance
         (0.75, 0.80),   # 75-80% attendance
         (0.89, 0.89),   # Exactly 89% attendance
         (0.91, 1.00)    # Above 90% attendance
     ]
     
-    # Assign students to attendance groups
-    group_assignments = np.random.choice(len(attendance_groups), num_students, p=[0.1, 0.3, 0.3, 0.3])
+    # Assign students to attendance groups (15-25% gets 10% of students)
+    group_assignments = np.random.choice(
+        len(attendance_groups), 
+        num_students, 
+        p=[0.1, 0.2, 0.3, 0.2, 0.2]  # Adjusted probabilities
+    )
     
     present_days = []
     absent_days = []
@@ -107,28 +109,28 @@ def generate_sample_data():
         'CA_Status': (np.array(attendance_pct) <= 90).astype(int)  # 1 if <=90%, else 0
     })
     
-    # Generate 3 years of historical data maintaining similar attendance patterns
+    # Generate 3 years of historical data for ALL students
     historical_years = 3
     historical_data = []
     
     for year in range(current_year - historical_years, current_year):
-        # Select 60% of students for historical data
-        selected_students = np.random.choice(num_students, int(num_students * 0.6), replace=False)
-        
-        for idx in selected_students:
+        for idx in range(num_students):  # Generate history for all 500 students
             student_row = data.iloc[idx].copy()
             year_diff = current_year - year
             student_row['Grade'] = max(6, student_row['Grade'] - year_diff)
             
             if student_row['Grade'] >= 6:
-                # Slightly modify attendance while keeping in same general range
-                current_pct = student_row['Attendance_Percentage'] / 100
+                # Get the student's original attendance group
+                original_pct = data.iloc[idx]['Attendance_Percentage'] / 100
                 
-                if current_pct <= 0.5:
-                    new_pct = np.random.uniform(0.2, 0.5)
-                elif 0.75 <= current_pct <= 0.80:
+                # Determine which group they belong to
+                if 0.15 <= original_pct <= 0.25:
+                    new_pct = np.random.uniform(0.15, 0.25)  # Keep in 15-25% range
+                elif 0.20 <= original_pct <= 0.50:
+                    new_pct = np.random.uniform(0.20, 0.50)
+                elif 0.75 <= original_pct <= 0.80:
                     new_pct = np.random.uniform(0.75, 0.80)
-                elif current_pct == 0.89:
+                elif original_pct == 0.89:
                     new_pct = np.random.uniform(0.88, 0.90)
                 else:  # > 0.90
                     new_pct = np.random.uniform(0.91, 1.0)
@@ -151,14 +153,10 @@ def generate_sample_data():
                 historical_data.append(student_row)
     
     # Combine current and historical data
-    if historical_data:
-        historical_df = pd.DataFrame(historical_data)
-        combined_data = pd.concat([data, historical_df])
-    else:
-        combined_data = data
+    historical_df = pd.DataFrame(historical_data)
+    combined_data = pd.concat([data, historical_df])
     
     return data, combined_data
-
 def preprocess_data(df, is_training=True):
     """Preprocess the input data for training or prediction"""
     try:
