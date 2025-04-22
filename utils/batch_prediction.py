@@ -248,63 +248,6 @@ def render_batch_prediction():
             
             # Export options
             st.markdown("### Export Results")
-
-            
-            # Add individual student analysis section after export
-    st.markdown("---")
-    st.markdown("### Individual Student Analysis")
-    
-    if not filtered_results.empty:
-        # Student selection
-        student_list = filtered_results['Student_ID'].tolist()
-        selected_student_id = st.selectbox(
-            "Select Student for Detailed Analysis",
-            options=student_list,
-            key="batch_student_select"
-        )
-        
-        if selected_student_id:
-            # Get student data
-            student_data = filtered_results[filtered_results['Student_ID'] == selected_student_id].iloc[0]
-            risk_value = student_data['CA_Risk']
-            
-            # Create layout columns
-            col1, col2 = st.columns([1, 2])
-            
-            with col1:
-                # Display interactive risk gauge
-                st.plotly_chart(
-                    plot_risk_gauge(risk_value),
-                    use_container_width=True,
-                    config={'displayModeBar': False}
-                )
-            
-            with col2:
-                # Risk explanation
-                st.markdown("#### Risk Factors Analysis")
-                explanation = get_risk_explanation(risk_value, student_data)
-                st.markdown(explanation)
-                
-                # Recommendations
-                st.markdown("#### Recommended Interventions")
-                recommendations = get_recommendation_with_reasons(risk_value, student_data)
-                for intervention, reason in recommendations:
-                    st.markdown(f"""
-                    <div style="padding:10px; margin:10px 0; background:#f8f9fa; 
-                                border-left:4px solid #4CAF50; border-radius:4px;">
-                        <div style="font-weight:500; color:#333;">{intervention}</div>
-                        <div style="font-size:0.9em; color:#666;">{reason}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-            # Show raw student data
-            with st.expander("View Detailed Student Data"):
-                st.write("### Student Profile")
-                profile_cols = ['School', 'Grade', 'Gender', 'Meal_Code',
-                               'Academic_Performance', 'Present_Days', 'Absent_Days']
-                profile_data = student_data[profile_cols]
-                st.table(profile_data.astype(str))
-            
             
             # Create a layout for export options
             export_col1, export_col2, export_col3, export_col4 = st.columns([2, 1, 1, 1])
@@ -390,4 +333,3 @@ def display_svg(file_path, width=None):
         content = content.replace("<svg ", f"<svg width='{width}' ")
         
     return content
- 
