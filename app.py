@@ -13,7 +13,7 @@ import plotly.graph_objects as go
 # Import utility modules
 from utils.common import (
     display_svg, generate_sample_data, predict_ca_risk,
-    plot_risk_gauge, plot_feature_importance, get_recommendation_with_reasons,
+    plot_risk_gauge, plot_feature_importance, get_recommendation,
     on_student_id_change, on_calculate_risk, on_calculate_what_if
 )
 from utils.training_data import render_training_data_tab
