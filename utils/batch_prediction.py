@@ -248,6 +248,95 @@ def render_batch_prediction():
             
             # Export options
             st.markdown("### Export Results")
+        def render_batch_prediction():
+    """Render the Batch Prediction section"""
+    # ... [keep all your existing batch prediction code until the export section]
+
+            # Handle export
+            if export_button:
+                if not export_cols:
+                    st.warning("Please select at least one column to export.")
+                else:
+                    # Filter by selected risk levels
+                    export_data = results[results['Risk_Category'].isin(export_risk)]
+                    
+                    # Select columns
+                    export_data = export_data[export_cols]
+                    
+                    # Convert to CSV
+                    csv = export_data.to_csv(index=False)
+                    
+                    # Create a download link
+                    st.download_button(
+                        label="Download CSV",
+                        data=csv,
+                        file_name="ca_prediction_results.csv",
+                        mime="text/csv"
+                    )
+    
+    # Add individual student analysis section AFTER export section
+    if 'prediction_results' in st.session_state and st.session_state.prediction_results is not None:
+        st.markdown("---")
+        st.markdown("### Individual Student Analysis (Predicted Results)")
+        
+        # Get filtered results (from earlier in the function)
+        filtered_results = apply_filters(results) if 'results' in locals() else st.session_state.prediction_results
+        
+        if not filtered_results.empty:
+            # Student selection
+            student_list = filtered_results['Student_ID'].tolist()
+            selected_student_id = st.selectbox(
+                "Select Student for Detailed Analysis",
+                options=student_list,
+                key="batch_student_select"
+            )
+            
+            if selected_student_id:
+                # Get student data from predictions
+                student_data = filtered_results[filtered_results['Student_ID'] == selected_student_id].iloc[0]
+                risk_value = student_data['CA_Risk']
+                
+                # Create layout columns
+                col1, col2 = st.columns([1, 2])
+                
+                with col1:
+                    # Display interactive risk gauge
+                    st.plotly_chart(
+                        plot_risk_gauge(risk_value),
+                        use_container_width=True,
+                        config={'displayModeBar': False}
+                    )
+                
+                with col2:
+                    # Risk explanation using PREDICTED data
+                    st.markdown("#### Risk Analysis (Predicted)")
+                    explanation = get_risk_explanation(risk_value, student_data.to_dict())
+                    st.markdown(explanation)
+                    
+                    # Recommendations using PREDICTED data
+                    st.markdown("#### Recommended Interventions")
+                    recommendations = get_recommendation_with_reasons(risk_value, student_data.to_dict())
+                    for intervention, reason in recommendations:
+                        st.markdown(f"""
+                        <div style="padding:10px; margin:10px 0; background:#f8f9fa; 
+                                    border-left:4px solid #4CAF50; border-radius:4px;">
+                            <div style="font-weight:500; color:#333;">{intervention}</div>
+                            <div style="font-size:0.9em; color:#666;">{reason}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                # Show raw student data
+                with st.expander("View Detailed Student Data"):
+                    st.write("### Student Profile (Predicted)")
+                    profile_cols = ['Student_ID', 'School', 'Grade', 'Gender', 'Meal_Code',
+                                   'Academic_Performance', 'Present_Days', 'Absent_Days',
+                                   'CA_Risk', 'Risk_Category']
+                    profile_data = student_data[[col for col in profile_cols if col in student_data.index]]
+                    st.table(profile_data.astype(str))
+
+    st.markdown("</div>", unsafe_allow_html=True)
+    return
+
             
             # Create a layout for export options
             export_col1, export_col2, export_col3, export_col4 = st.columns([2, 1, 1, 1])
