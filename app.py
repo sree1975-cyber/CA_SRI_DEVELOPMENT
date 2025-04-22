@@ -406,13 +406,6 @@ def render_individual_prediction():
     
     st.markdown("</div>", unsafe_allow_html=True)
 
-def display_student_prediction(data):
-    """Display prediction results for a student"""
-    # Your existing display logic here
-    risk_score = predict_ca_risk(data, st.session_state.model)
-    st.metric("CA Risk Score", f"{risk_score:.1%}")
-    plot_risk_gauge(risk_score)
-    st.markdown(get_recommendation(risk_score))
 
 # Main application
 def main():
