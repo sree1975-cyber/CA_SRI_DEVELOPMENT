@@ -154,7 +154,7 @@ def render_batch_prediction():
                 selected_risk = st.multiselect(
                     "Risk Category",
                     options=['High', 'Medium', 'Low'],
-                    default=['High'],
+                    default=['High','Medium', 'Low'],
                     key="results_risk_filter"
                 )
             
