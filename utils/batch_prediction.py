@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from utils.common import upload_data_file, batch_predict_ca, predict_ca_risk, plot_risk_gauge, get_recommendations
+from utils.common import upload_data_file, batch_predict_ca, predict_ca_risk, plot_risk_gauge, get_recommendation
 
 def render_batch_prediction():
     """Render the Batch Prediction section"""
@@ -247,11 +247,11 @@ def render_batch_prediction():
                     
                     with col2:
                         st.markdown("#### Risk Analysis (Predicted)")
-                        explanation = get_recommendations(risk_value, student_data.to_dict())
+                        explanation = get_recommendation(risk_value, student_data.to_dict())
                         st.markdown(explanation)
                         
                         st.markdown("#### Recommended Interventions")
-                        recommendations = get_recommendations(risk_value, student_data.to_dict())
+                        recommendations = get_recommendation(risk_value, student_data.to_dict())
                         for intervention, reason in recommendations:
                             st.markdown(f"""
                             <div style="padding:10px; margin:10px 0; background:#f8f9fa; 
