@@ -448,13 +448,14 @@ def render_individual_prediction():
             )
             
             total_days = present_days + absent_days
+            attendance_pct = (present_days/total_days*100 if total_days>0 else 0)
             st.metric(
                 "Attendance Rate", 
-                f"{(present_days/total_days*100 if total_days>0 else 0):.1f}%"
+                f"{attendance_pct:.1f}%"
             )
         
         with col2:
-            st.slider(
+            academic_performance = st.slider(
                 "Academic Performance %",
                 min_value=0,
                 max_value=100,
@@ -483,26 +484,51 @@ def render_individual_prediction():
             )
         
         if st.form_submit_button("Analyze Risk"):
-            on_calculate_risk()
+            # Calculate attendance percentage
+            attendance_pct = (present_days/(present_days + absent_days)) * 100 if (present_days + absent_days) > 0 else 0
+            
+            # Automatically set to high risk if attendance <= 90%
+            if attendance_pct <= 90:
+                st.session_state.current_prediction = 0.8  # High risk value (0.8 is 80% probability)
+                st.warning("Automatically flagged as high risk due to low attendance (≤90%)")
+            else:
+                # Normal risk calculation
+                attendance_rate = present_days / (present_days + absent_days)
+                academic_factor = 1 - (academic_performance / 100)
+                risk_score = (0.6 * (1 - attendance_rate)) + (0.4 * academic_factor)
+                st.session_state.current_prediction = risk_score
+            
+            st.session_state.current_student_data = {
+                'Present_Days': present_days,
+                'Absent_Days': absent_days,
+                'Academic_Performance': academic_performance,
+                'Grade': current_student['Grade'],
+                'Meal_Code': meal_options[meal_index],
+                'Attendance_Percentage': attendance_pct
+            }
             st.rerun()
     
     if st.session_state.get('current_prediction') is not None:
         risk_value = st.session_state.current_prediction
         
         # Create columns for better layout
-        col1, col2 = st.columns([1, 2])  # First column narrower for gauge
+        col1, col2 = st.columns([1, 2])
         
         with col1:
-            # Display the properly sized gauge
             st.plotly_chart(
                 plot_risk_gauge(risk_value),
                 use_container_width=True,
-                config={'displayModeBar': False}  # Hide plotly toolbar
+                config={'displayModeBar': False}
             )
         
         with col2:
             st.markdown("### Risk Analysis")
             student_data = st.session_state.get('current_student_data', current_student)
+            
+            # Add attendance warning if applicable
+            if student_data.get('Attendance_Percentage', 100) <= 90:
+                st.warning("⚠️ High risk due to attendance ≤90%")
+            
             st.markdown(get_risk_explanation(risk_value, student_data))
             
             st.markdown("### Recommended Actions")
@@ -515,7 +541,6 @@ def render_individual_prediction():
                 """, unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
-
 # Main application
 def main():
     """Main application entry point"""
