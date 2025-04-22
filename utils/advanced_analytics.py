@@ -690,6 +690,27 @@ def render_advanced_analytics():
     # Temporal Attendance Trends tab
     with analytics_tabs[5]:
         st.markdown("<div class='card-title'>📅 Temporal Attendance Trends</div>", unsafe_allow_html=True)
+   # Add collapsible section for description
+    with st.expander("What are Temporal Attendance Trends?"):
+        st.markdown("""
+        **Definition:**
+        Temporal Attendance Trends in schools refer to patterns in student attendance over different time periods (daily, weekly, monthly, or yearly). 
+        This helps educators and administrators identify:
+        
+        - **Peak absenteeism periods** (e.g., before holidays, exam days).
+        - **Impact of school policies** (e.g., stricter rules improving punctuality).
+        - **Seasonal influences** (e.g., flu season, monsoon affecting attendance).
+        
+        **How to Define & Analyze Student Attendance Trends?**
+        1. **Key Time-Based Trends to Track**
+        - **Trend Type**: Example Questions | Why It Matters
+        - **Daily Trends**: "Do more students miss school on Mondays/Fridays?" | Adjust motivational Monday assemblies or weekend homework load.
+        - **Weekly/Monthly**: "Is attendance dropping before exams?" | Identify stress-related absenteeism & offer counseling.
+        - **Term-wise**: "Which term (semester) has the lowest attendance?" | Plan important events during high-attendance periods.
+        - **Yearly Comparison**: "Did the new reward system improve attendance vs. last year?" | Measure policy effectiveness.
+        """)
+    
+    # The rest of the existing temporal trends code (visualization, analysis, etc.)
         
         if 'historical_data' in st.session_state and not st.session_state.historical_data.empty:
             # Check for 'Year' column
