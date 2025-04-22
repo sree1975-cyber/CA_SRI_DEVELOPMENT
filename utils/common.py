@@ -89,7 +89,7 @@ def generate_sample_data():
     # Academic performance - random with slight attendance correlation
     academic_perf = np.clip(
         np.random.normal(75, 15, num_students) + 
-        (np.array(attendance_pct) - 85, 0, 100
+        (np.array(attendance_pct) - 85), 0, 100
     ).astype(int)
     
     # Create the dataframe
