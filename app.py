@@ -349,7 +349,7 @@ def on_calculate_risk():
         st.error(f"Calculation error: {str(e)}")
         st.session_state.current_prediction = None
 
-def render_batch_prediction():
+ def render_batch_prediction():
     """Render the Batch Prediction section"""
     # ... [keep all your existing batch prediction code until the export section]
 
