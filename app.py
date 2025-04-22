@@ -413,12 +413,13 @@ def render_individual_prediction():
         col1, col2 = st.columns(2)
         
         with col1:
-            school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
+            #school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
             school_value = current_student['School']
             school_index = school_options.index(school_value) if school_value in school_options else 0
             st.selectbox(
                 "School",
-                options=school_options,
+               # options=school_options,
+                options= school_value,
                 index=school_index,
                 key=f"school_{selected_id}"
             )
