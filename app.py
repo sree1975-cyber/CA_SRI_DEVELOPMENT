@@ -349,168 +349,94 @@ def on_calculate_risk():
         st.error(f"Calculation error: {str(e)}")
         st.session_state.current_prediction = None
 
-def render_individual_prediction():
-    """Main prediction interface"""
-    if 'current_prediction' not in st.session_state:
-        st.session_state.current_prediction = None
+def render_batch_prediction():
+    """Render the Batch Prediction section"""
+    # ... [keep all your existing batch prediction code until the export section]
+
+            # Handle export
+            if export_button:
+                if not export_cols:
+                    st.warning("Please select at least one column to export.")
+                else:
+                    # Filter by selected risk levels
+                    export_data = results[results['Risk_Category'].isin(export_risk)]
+                    
+                    # Select columns
+                    export_data = export_data[export_cols]
+                    
+                    # Convert to CSV
+                    csv = export_data.to_csv(index=False)
+                    
+                    # Create a download link
+                    st.download_button(
+                        label="Download CSV",
+                        data=csv,
+                        file_name="ca_prediction_results.csv",
+                        mime="text/csv"
+                    )
     
-    st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='card-title'>👨‍🎓 Student Risk Analysis</div>", unsafe_allow_html=True)
-    
-    if 'current_year_data' not in st.session_state:
-        st.error("Please upload current-year data first")
-        return
-    
-    required_columns = ['Student_ID', 'School', 'Grade', 'Present_Days', 
-                       'Absent_Days', 'Academic_Performance', 'Gender', 'Meal_Code']
-    
-    missing_cols = [col for col in required_columns 
-                   if col not in st.session_state.current_year_data.columns]
-    
-    if missing_cols:
-        st.error(f"Missing columns: {', '.join(missing_cols)}")
-        return
-    
-    try:
-        current_students = st.session_state.current_year_data['Student_ID'].dropna().unique().tolist()
-        if not current_students:
-            st.error("No valid student IDs found")
-            return
-    except Exception as e:
-        st.error(f"Data error: {str(e)}")
-        return
-    
-    selected_id = st.selectbox(
-        "Select Student",
-        options=current_students,
-        index=0,
-        key="student_select"
-    )
-    
-    try:
-        student_data = st.session_state.current_year_data[
-            st.session_state.current_year_data['Student_ID'] == selected_id
-        ].iloc[0]
-    except IndexError:
-        st.error("Student not found")
-        return
-    
-    current_student = {
-        'School': str(student_data.get('School', 'North High')),
-        'Grade': int(student_data.get('Grade', 9)),
-        'Present_Days': int(student_data.get('Present_Days', 150)),
-        'Absent_Days': int(student_data.get('Absent_Days', 10)),
-        'Academic_Performance': int(student_data.get('Academic_Performance', 70)),
-        'Gender': str(student_data.get('Gender', 'Male')),
-        'Meal_Code': str(student_data.get('Meal_Code', 'Free'))
-    }
-    
-    with st.form(key="student_form"):
-        col1, col2 = st.columns(2)
+    # Add individual student analysis section AFTER export section
+    if 'prediction_results' in st.session_state and st.session_state.prediction_results is not None:
+        st.markdown("---")
+        st.markdown("### Individual Student Analysis (Predicted Results)")
         
-        with col1:
-            school_options = ["North High", "South High", "East Middle", "West Elementary", "Central Academy"]
-            school_value = current_student['School']
-            school_index = school_options.index(school_value) if school_value in school_options else 0
-            st.selectbox(
-                "School",
-                options=school_options,
-                index=school_index,
-                key=f"school_{selected_id}"
-            )
-            
-            st.number_input(
-                "Grade",
-                min_value=1,
-                max_value=12,
-                value=current_student['Grade'],
-                key=f"grade_{selected_id}"
-            )
-            
-            present_days = st.number_input(
-                "Present Days",
-                min_value=0,
-                max_value=200,
-                value=current_student['Present_Days'],
-                key=f"present_{selected_id}"
-            )
-            
-            absent_days = st.number_input(
-                "Absent Days",
-                min_value=0,
-                max_value=200,
-                value=current_student['Absent_Days'],
-                key=f"absent_{selected_id}"
-            )
-            
-            total_days = present_days + absent_days
-            st.metric(
-                "Attendance Rate", 
-                f"{(present_days/total_days*100 if total_days>0 else 0):.1f}%"
-            )
+        # Get filtered results (from earlier in the function)
+        filtered_results = apply_filters(results) if 'results' in locals() else st.session_state.prediction_results
         
-        with col2:
-            st.slider(
-                "Academic Performance %",
-                min_value=0,
-                max_value=100,
-                value=current_student['Academic_Performance'],
-                key=f"academic_{selected_id}"
+        if not filtered_results.empty:
+            # Student selection
+            student_list = filtered_results['Student_ID'].tolist()
+            selected_student_id = st.selectbox(
+                "Select Student for Detailed Analysis",
+                options=student_list,
+                key="batch_student_select"
             )
             
-            gender_options = ["Male", "Female", "Other"]
-            gender_value = current_student['Gender']
-            gender_index = gender_options.index(gender_value) if gender_value in gender_options else 0
-            st.selectbox(
-                "Gender",
-                options=gender_options,
-                index=gender_index,
-                key=f"gender_{selected_id}"
-            )
-            
-            meal_options = ["Free", "Reduced", "Paid"]
-            meal_value = current_student['Meal_Code']
-            meal_index = meal_options.index(meal_value) if meal_value in meal_options else 0
-            st.selectbox(
-                "Meal Status",
-                options=meal_options,
-                index=meal_index,
-                key=f"meal_{selected_id}"
-            )
-        
-        if st.form_submit_button("Analyze Risk"):
-            on_calculate_risk()
-            st.rerun()
-    
-    if st.session_state.get('current_prediction') is not None:
-        risk_value = st.session_state.current_prediction
-        
-        # Create columns for better layout
-        col1, col2 = st.columns([1, 2])  # First column narrower for gauge
-        
-        with col1:
-            # Display the properly sized gauge
-            st.plotly_chart(
-                plot_risk_gauge(risk_value),
-                use_container_width=True,
-                config={'displayModeBar': False}  # Hide plotly toolbar
-            )
-        
-        with col2:
-            st.markdown("### Risk Analysis")
-            student_data = st.session_state.get('current_student_data', current_student)
-            st.markdown(get_risk_explanation(risk_value, student_data))
-            
-            st.markdown("### Recommended Actions")
-            for intervention, reason in get_recommendation_with_reasons(risk_value, student_data):
-                st.markdown(f"""
-                <div style="padding:10px; margin:8px 0; border-left:4px solid #4CAF50; background:#f8f9fa;">
-                    <div style="font-weight:bold; font-size:14px;">{intervention}</div>
-                    <div style="color:#555; font-size:13px;">{reason}</div>
-                </div>
-                """, unsafe_allow_html=True)
-    
+            if selected_student_id:
+                # Get student data from predictions
+                student_data = filtered_results[filtered_results['Student_ID'] == selected_student_id].iloc[0]
+                risk_value = student_data['CA_Risk']
+                
+                # Create layout columns
+                col1, col2 = st.columns([1, 2])
+                
+                with col1:
+                    # Display interactive risk gauge
+                    st.plotly_chart(
+                        plot_risk_gauge(risk_value),
+                        use_container_width=True,
+                        config={'displayModeBar': False}
+                    )
+                
+                with col2:
+                    # Risk explanation using PREDICTED data
+                    st.markdown("#### Risk Analysis (Predicted)")
+                    explanation = get_risk_explanation(risk_value, student_data.to_dict())
+                    st.markdown(explanation)
+                    
+                    # Recommendations using PREDICTED data
+                    st.markdown("#### Recommended Interventions")
+                    recommendations = get_recommendation_with_reasons(risk_value, student_data.to_dict())
+                    for intervention, reason in recommendations:
+                        st.markdown(f"""
+                        <div style="padding:10px; margin:10px 0; background:#f8f9fa; 
+                                    border-left:4px solid #4CAF50; border-radius:4px;">
+                            <div style="font-weight:500; color:#333;">{intervention}</div>
+                            <div style="font-size:0.9em; color:#666;">{reason}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                # Show raw student data
+                with st.expander("View Detailed Student Data"):
+                    st.write("### Student Profile (Predicted)")
+                    profile_cols = ['Student_ID', 'School', 'Grade', 'Gender', 'Meal_Code',
+                                   'Academic_Performance', 'Present_Days', 'Absent_Days',
+                                   'CA_Risk', 'Risk_Category']
+                    profile_data = student_data[[col for col in profile_cols if col in student_data.index]]
+                    st.table(profile_data.astype(str))
+
     st.markdown("</div>", unsafe_allow_html=True)
+    return
 
 # Main application
 def main():
