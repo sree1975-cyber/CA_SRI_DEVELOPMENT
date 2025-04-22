@@ -228,7 +228,7 @@ def render_batch_prediction():
             # Select columns to display
             display_cols = ['Student_ID', 'School', 'Grade', 'Gender', 'CA_Risk', 'Risk_Category']
             display_cols = [col for col in display_cols if col in filtered_results.columns]
-                     
+            
             # Create a dataframe for display
             display_df = filtered_results[display_cols].copy()
             
