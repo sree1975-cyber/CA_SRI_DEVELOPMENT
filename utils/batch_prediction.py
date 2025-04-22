@@ -251,7 +251,7 @@ def render_batch_prediction():
                         st.markdown(explanation)
                         
                         st.markdown("#### Recommended Interventions")
-                        recommendations = get_recommendation_with_reasons(risk_value, student_data.to_dict())
+                        recommendations = get_recommendations(risk_value, student_data.to_dict())
                         for intervention, reason in recommendations:
                             st.markdown(f"""
                             <div style="padding:10px; margin:10px 0; background:#f8f9fa; 
