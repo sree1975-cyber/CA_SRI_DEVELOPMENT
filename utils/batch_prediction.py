@@ -403,7 +403,7 @@ def render_batch_prediction():
                     )
     
     st.markdown("</div>", unsafe_allow_html=True)
-    return
+   
 
 
 def display_svg(file_path, width=None):
