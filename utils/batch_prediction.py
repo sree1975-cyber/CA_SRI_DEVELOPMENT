@@ -17,7 +17,6 @@ def render_batch_prediction():
     st.markdown("""
     Upload current student data to predict chronic absenteeism risk for multiple students at once.
     """)
-def get_risk_explanation():
     
     # Check if we have a trained model
     if 'model' not in st.session_state or st.session_state.model is None:
