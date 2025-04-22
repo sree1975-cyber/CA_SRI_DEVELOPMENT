@@ -349,7 +349,7 @@ def on_calculate_risk():
         st.error(f"Calculation error: {str(e)}")
         st.session_state.current_prediction = None
 
- def render_batch_prediction():
+def render_batch_prediction():
     """Render the Batch Prediction section"""
     # ... [keep all your existing batch prediction code until the export section]
 
@@ -375,8 +375,8 @@ def on_calculate_risk():
                         mime="text/csv"
                     )
     
-    # Add individual student analysis section AFTER export section
-    if 'prediction_results' in st.session_state and st.session_state.prediction_results is not None:
+     # Add individual student analysis section AFTER export section
+     if 'prediction_results' in st.session_state and st.session_state.prediction_results is not None:
         st.markdown("---")
         st.markdown("### Individual Student Analysis (Predicted Results)")
         
@@ -436,8 +436,7 @@ def on_calculate_risk():
                     st.table(profile_data.astype(str))
 
     st.markdown("</div>", unsafe_allow_html=True)
-    return
-
+    
 # Main application
 def main():
     """Main application entry point"""
