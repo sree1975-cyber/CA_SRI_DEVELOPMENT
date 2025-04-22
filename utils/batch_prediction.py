@@ -316,7 +316,7 @@ def render_batch_prediction():
     st.markdown("</div>", unsafe_allow_html=True)
     return
 
- def render_batch_prediction():
+def render_batch_prediction():
     """Render the Batch Prediction section"""
     # ... [keep all your existing batch prediction code until the export section]
 
